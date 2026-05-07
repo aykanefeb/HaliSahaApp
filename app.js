@@ -15,7 +15,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// State Management. a
+// State Management. aaaaa
 let players = [];
 let messages = [];
 let editingPlayerId = null;
