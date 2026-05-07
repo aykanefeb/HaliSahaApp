@@ -89,17 +89,26 @@
                         <i class="fa-solid fa-search"></i>
                         <input type="text" id="search-player" placeholder="Oyuncu ara...">
                     </div>
-                    <div class="filter-options">
-                        <select id="filter-position">
-                            <option value="all">Tüm Mevkiler</option>
-                            <option value="Kaleci">Kaleci</option>
-                            <option value="Defans">Defans</option>
-                            <option value="Orta Saha">Orta Saha</option>
-                            <option value="Kanat">Kanat</option>
-                            <option value="Forvet">Forvet</option>
-                        </select>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <div class="filter-options" style="display: flex; gap: 12px; align-items: center;">
+                            <select id="filter-position">
+                                <option value="all">Tüm Mevkiler</option>
+                                <option value="Kaleci">Kaleci</option>
+                                <option value="Defans">Defans</option>
+                                <option value="Orta Saha">Orta Saha</option>
+                                <option value="Kanat">Kanat</option>
+                                <option value="Forvet">Forvet</option>
+                            </select>
+                            <button class="btn btn-share-pool" id="btn-share-pool" title="Havuzu Paylaş">
+                                <i class="fa-solid fa-share-nodes"></i> Paylaş
+                            </button>
+                            <button class="btn btn-import-pool" id="btn-import-pool" title="Havuz İçe Aktar">
+                                <i class="fa-solid fa-download"></i> İçe Aktar
+                            </button>
+                        </div>
                     </div>
                 </div>
+                <div id="share-error-msg" style="display: none; color: #ef4444; text-align: center; margin-bottom: 16px; font-weight: 500;"></div>
 
                 <div class="players-grid full-grid" id="all-players-grid">
                     <!-- All players injected here -->
@@ -237,13 +246,88 @@
                 <h2>Katılım İstekleri</h2>
                 <button class="close-modal" id="btn-close-requests"><i class="fa-solid fa-times"></i></button>
             </div>
-            <div class="modal-body" id="requests-list">
-                <!-- Requests injected here -->
-            </div>
             </div>
         </div>
-    </div> <!-- Close modal-overlay -->
-</div> <!-- Close app-container (dashboard-container is closed inside JS logic or elsewhere) -->
+    </div> <!-- Close requests-modal -->
+
+    <!-- Share Code Display Modal -->
+    <div class="modal-overlay" id="share-code-modal">
+        <div class="modal-content glass-panel" style="max-width: 420px; text-align: center;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-share-nodes" style="color: var(--accent);"></i> Havuz Paylaşıldı!</h2>
+                <button class="close-modal" id="btn-close-share-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); margin-bottom: 20px;">Aşağıdaki kodu karşı tarafa gönderin. Bu kodu girerek oyuncu havuzunuzu kendi grubuna aktarabilir.</p>
+                <div class="share-code-box">
+                    <span id="share-code-value" class="share-code-text">------</span>
+                </div>
+                <button class="btn btn-accent full-width" id="btn-copy-share-code" style="margin-top: 16px;">
+                    <i class="fa-solid fa-copy"></i> Kopyala
+                </button>
+                <div class="share-code-info">
+                    <p><i class="fa-solid fa-clock"></i> Bu kod <strong>1 saat</strong> geçerlidir</p>
+                    <p><i class="fa-solid fa-users"></i> <span id="share-player-count">0 oyuncu paylaşılacak</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Pool Modal -->
+    <div class="modal-overlay" id="import-pool-modal">
+        <div class="modal-content glass-panel" style="max-width: 420px;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-download" style="color: var(--primary);"></i> Havuz İçe Aktar</h2>
+                <button class="close-modal" id="btn-close-import-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); margin-bottom: 20px;">Başka bir grubun paylaştığı 6 haneli kodu girerek oyuncu havuzunu grubunuza aktarabilirsiniz.</p>
+                <div class="form-group">
+                    <label for="import-code-input">Paylaşım Kodu</label>
+                    <input type="text" id="import-code-input" placeholder="Örn: A3F9K2" maxlength="6" style="text-transform: uppercase; text-align: center; font-size: 1.3rem; letter-spacing: 4px; font-weight: 600;">
+                </div>
+                <div id="import-error-msg" style="display: none; color: #ef4444; text-align: center; margin-bottom: 12px; font-size: 0.9rem;"></div>
+                <button class="btn btn-primary full-width" id="btn-import-execute">
+                    <i class="fa-solid fa-download"></i> İçe Aktar
+                </button>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 12px; text-align: center;">
+                    <i class="fa-solid fa-info-circle"></i> Aynı isimdeki oyuncular otomatik olarak atlanır.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Result Modal -->
+    <div class="modal-overlay" id="import-result-modal">
+        <div class="modal-content glass-panel" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-clipboard-check" style="color: var(--accent);"></i> İçe Aktarma Tamamlandı</h2>
+                <button class="close-modal" id="btn-close-result-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); margin-bottom: 16px;">Kaynak: <strong id="result-source-name"></strong></p>
+                <div class="import-result-stats">
+                    <div class="result-stat result-stat-added">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span><strong id="result-added-count">0</strong> oyuncu eklendi</span>
+                    </div>
+                    <div class="result-stat result-stat-skipped">
+                        <i class="fa-solid fa-forward"></i>
+                        <span><strong id="result-skipped-count">0</strong> oyuncu atlandı</span>
+                    </div>
+                </div>
+                <div id="result-skipped-section" style="display: none; margin-top: 16px;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;"><i class="fa-solid fa-info-circle"></i> Atlanan oyuncular (zaten havuzda mevcut):</p>
+                    <ul id="result-skipped-list" class="skipped-players-list"></ul>
+                </div>
+                <button class="btn btn-primary full-width" id="btn-close-result-modal-bottom" onclick="document.getElementById('import-result-modal').classList.remove('active')">
+                    Tamam
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div> <!-- Close app-container -->
 
     <script type="module" src="app.js"></script>
 

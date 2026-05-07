@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, onSnapshot, getDoc, updateDoc, arrayUnion, arrayRemove, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, onSnapshot, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -1080,6 +1080,251 @@ window.rejectRequest = async function (reqUserId, reqUserName) {
         requests: arrayRemove({ userId: reqUserId, userName: reqUserName })
     });
 };
+
+// --- PLAYER POOL SHARING SYSTEM ---
+
+// Helper: normalize player name for duplicate detection
+function normalizeName(name) {
+    return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+// Generate a 6-character alphanumeric share code
+function generateShareCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous chars (0,O,1,I)
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
+// Share Player Pool
+async function sharePlayerPool() {
+    if (!activeGroupId) return;
+
+    const shareBtn = document.getElementById('btn-share-pool');
+    const shareModal = document.getElementById('share-code-modal');
+    const shareCodeEl = document.getElementById('share-code-value');
+    const shareCountEl = document.getElementById('share-player-count');
+    const shareErrorEl = document.getElementById('share-error-msg');
+
+    if (players.length === 0) {
+        shareErrorEl.textContent = 'Havuzda paylaşılacak oyuncu yok.';
+        shareErrorEl.style.display = 'block';
+        setTimeout(() => shareErrorEl.style.display = 'none', 3000);
+        return;
+    }
+
+    shareBtn.disabled = true;
+    shareBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Oluşturuluyor...';
+
+    try {
+        // Get current group name
+        const groupSnap = await getDoc(doc(db, 'groups', activeGroupId));
+        const groupName = groupSnap.exists() ? groupSnap.data().name : 'Bilinmeyen Grup';
+
+        const code = generateShareCode();
+        const now = Date.now();
+        const expiresAt = now + (60 * 60 * 1000); // 1 hour TTL
+
+        // Create player snapshot (strip IDs, only data)
+        const playerSnapshot = players.map(p => ({
+            name: p.name,
+            position: p.position,
+            stats: p.stats || {},
+            rating: p.rating,
+            isAvailable: p.isAvailable !== undefined ? p.isAvailable : true
+        }));
+
+        await setDoc(doc(db, 'shareCodes', code), {
+            code: code,
+            sourceGroupId: activeGroupId,
+            sourceGroupName: groupName,
+            createdBy: userId,
+            createdAt: now,
+            expiresAt: expiresAt,
+            players: playerSnapshot
+        });
+
+        // Show success modal
+        shareCodeEl.textContent = code;
+        shareCountEl.textContent = `${playerSnapshot.length} oyuncu paylaşılacak`;
+        shareModal.classList.add('active');
+    } catch (error) {
+        console.error('Paylaşım hatası:', error);
+        shareErrorEl.textContent = 'Paylaşım kodu oluşturulurken bir hata oluştu.';
+        shareErrorEl.style.display = 'block';
+        setTimeout(() => shareErrorEl.style.display = 'none', 3000);
+    } finally {
+        shareBtn.disabled = false;
+        shareBtn.innerHTML = '<i class="fa-solid fa-share-nodes"></i> Havuzu Paylaş';
+    }
+}
+
+// Import Player Pool
+async function importPlayerPool() {
+    if (!activeGroupId) return;
+
+    const codeInput = document.getElementById('import-code-input');
+    const importBtn = document.getElementById('btn-import-execute');
+    const importModal = document.getElementById('import-pool-modal');
+    const resultModal = document.getElementById('import-result-modal');
+    const importErrorEl = document.getElementById('import-error-msg');
+
+    const code = codeInput.value.trim().toUpperCase();
+    if (!code || code.length !== 6) {
+        importErrorEl.textContent = 'Lütfen 6 haneli paylaşım kodunu girin.';
+        importErrorEl.style.display = 'block';
+        return;
+    }
+
+    importBtn.disabled = true;
+    importBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İçe Aktarılıyor...';
+    importErrorEl.style.display = 'none';
+
+    try {
+        // Fetch share code document
+        const shareSnap = await getDoc(doc(db, 'shareCodes', code));
+
+        if (!shareSnap.exists()) {
+            importErrorEl.textContent = 'Bu paylaşım kodu bulunamadı.';
+            importErrorEl.style.display = 'block';
+            importBtn.disabled = false;
+            importBtn.innerHTML = '<i class="fa-solid fa-download"></i> İçe Aktar';
+            return;
+        }
+
+        const shareData = shareSnap.data();
+
+        // Check expiration
+        if (Date.now() > shareData.expiresAt) {
+            importErrorEl.textContent = 'Bu paylaşım kodunun süresi dolmuş.';
+            importErrorEl.style.display = 'block';
+            importBtn.disabled = false;
+            importBtn.innerHTML = '<i class="fa-solid fa-download"></i> İçe Aktar';
+            return;
+        }
+
+        // Check if importing to same group
+        if (shareData.sourceGroupId === activeGroupId) {
+            importErrorEl.textContent = 'Kendi grubunuzun havuzunu içe aktaramazsınız.';
+            importErrorEl.style.display = 'block';
+            importBtn.disabled = false;
+            importBtn.innerHTML = '<i class="fa-solid fa-download"></i> İçe Aktar';
+            return;
+        }
+
+        const incomingPlayers = shareData.players || [];
+
+        // Build normalized name set of existing players
+        const existingNames = new Set(players.map(p => normalizeName(p.name)));
+
+        // Separate new vs duplicate
+        const toAdd = [];
+        const skipped = [];
+
+        incomingPlayers.forEach(p => {
+            if (existingNames.has(normalizeName(p.name))) {
+                skipped.push(p);
+            } else {
+                toAdd.push(p);
+            }
+        });
+
+        // Batch write new players
+        if (toAdd.length > 0) {
+            const batch = writeBatch(db);
+            toAdd.forEach(p => {
+                const newId = Date.now().toString() + Math.random().toString(36).substr(2, 4);
+                const playerDoc = doc(db, `groups/${activeGroupId}/players`, newId);
+                batch.set(playerDoc, {
+                    id: newId,
+                    name: p.name,
+                    position: p.position,
+                    stats: p.stats || {},
+                    rating: p.rating || '0.0',
+                    isAvailable: true
+                });
+            });
+            await batch.commit();
+        }
+
+        // Close import modal and show result
+        importModal.classList.remove('active');
+        codeInput.value = '';
+
+        // Populate result modal
+        document.getElementById('result-added-count').textContent = toAdd.length;
+        document.getElementById('result-skipped-count').textContent = skipped.length;
+        document.getElementById('result-source-name').textContent = shareData.sourceGroupName;
+
+        const skippedListEl = document.getElementById('result-skipped-list');
+        if (skipped.length > 0) {
+            document.getElementById('result-skipped-section').style.display = 'block';
+            skippedListEl.innerHTML = skipped.map(p => 
+                `<li><i class="fa-solid fa-user"></i> ${p.name} <small style="color:var(--text-muted)">(${p.position})</small></li>`
+            ).join('');
+        } else {
+            document.getElementById('result-skipped-section').style.display = 'none';
+        }
+
+        resultModal.classList.add('active');
+
+    } catch (error) {
+        console.error('İçe aktarma hatası:', error);
+        importErrorEl.textContent = 'İçe aktarma sırasında bir hata oluştu.';
+        importErrorEl.style.display = 'block';
+    } finally {
+        importBtn.disabled = false;
+        importBtn.innerHTML = '<i class="fa-solid fa-download"></i> İçe Aktar';
+    }
+}
+
+// Share Pool Button
+document.getElementById('btn-share-pool').addEventListener('click', sharePlayerPool);
+
+// Import Pool Modal Open
+document.getElementById('btn-import-pool').addEventListener('click', () => {
+    document.getElementById('import-pool-modal').classList.add('active');
+    document.getElementById('import-error-msg').style.display = 'none';
+    document.getElementById('import-code-input').value = '';
+});
+
+// Import Execute Button
+document.getElementById('btn-import-execute').addEventListener('click', importPlayerPool);
+
+// Close modals
+document.getElementById('btn-close-share-modal').addEventListener('click', () => {
+    document.getElementById('share-code-modal').classList.remove('active');
+});
+
+document.getElementById('btn-close-import-modal').addEventListener('click', () => {
+    document.getElementById('import-pool-modal').classList.remove('active');
+});
+
+document.getElementById('btn-close-result-modal').addEventListener('click', () => {
+    document.getElementById('import-result-modal').classList.remove('active');
+});
+
+// Copy share code
+document.getElementById('btn-copy-share-code').addEventListener('click', () => {
+    const code = document.getElementById('share-code-value').textContent;
+    navigator.clipboard.writeText(code);
+    const btn = document.getElementById('btn-copy-share-code');
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Kopyalandı!';
+    setTimeout(() => {
+        btn.innerHTML = '<i class="fa-solid fa-copy"></i> Kopyala';
+    }, 2000);
+});
+
+// Close modals when clicking overlay
+['share-code-modal', 'import-pool-modal', 'import-result-modal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', (e) => {
+        if (e.target.id === id) {
+            document.getElementById(id).classList.remove('active');
+        }
+    });
+});
 
 // Initialize App
 initApp();

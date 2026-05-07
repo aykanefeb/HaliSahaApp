@@ -943,3 +943,120 @@ h1 {
 .status-dot.offline {
     background-color: #6b7280;
 }
+
+/* Share & Import Pool Styles */
+.btn-share-pool {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.btn-share-pool:hover {
+    background: #10b981;
+    color: white;
+}
+
+.btn-import-pool {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.btn-import-pool:hover {
+    background: #3b82f6;
+    color: white;
+}
+
+.share-code-box {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px dashed var(--accent);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.share-code-text {
+    font-size: 2.5rem;
+    letter-spacing: 8px;
+    font-weight: 700;
+    color: white;
+    font-family: monospace;
+}
+
+.share-code-info {
+    margin-top: 24px;
+    display: flex;
+    justify-content: space-around;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.share-code-info p {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.import-result-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.result-stat {
+    flex: 1;
+    padding: 16px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.result-stat i {
+    font-size: 2rem;
+}
+
+.result-stat span {
+    font-size: 0.95rem;
+}
+
+.result-stat-added {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.result-stat-added i { color: #10b981; }
+
+.result-stat-skipped {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.result-stat-skipped i { color: #f59e0b; }
+
+.skipped-players-list {
+    list-style: none;
+    max-height: 150px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.skipped-players-list li {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.9rem;
+}
+
+.skipped-players-list li:last-child {
+    border-bottom: none;
+}
