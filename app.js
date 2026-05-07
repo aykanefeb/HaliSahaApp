@@ -3,19 +3,19 @@ import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, onSnapshot, 
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCHJa9W8UtESJyJMAR1f60gh5Rw35SfCCs",
-  authDomain: "regista-bd253.firebaseapp.com",
-  projectId: "regista-bd253",
-  storageBucket: "regista-bd253.firebasestorage.app",
-  messagingSenderId: "800859981775",
-  appId: "1:800859981775:web:a78ec7700966198e70b4ba"
+    apiKey: "AIzaSyCHJa9W8UtESJyJMAR1f60gh5Rw35SfCCs",
+    authDomain: "regista-bd253.firebaseapp.com",
+    projectId: "regista-bd253",
+    storageBucket: "regista-bd253.firebasestorage.app",
+    messagingSenderId: "800859981775",
+    appId: "1:800859981775:web:a78ec7700966198e70b4ba"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// State Management
+// State Management. a
 let players = [];
 let messages = [];
 let editingPlayerId = null;
@@ -101,12 +101,12 @@ const universalAttributes = {
 function calculateRating(stats, position) {
     const weights = positionWeights[position];
     let score = 0;
-    
+
     for (const key in weights) {
         const val = stats[key] || 50;
         score += val * weights[key].weight;
     }
-    
+
     // Convert to 5-star scale
     return (score / 20).toFixed(1);
 }
@@ -144,13 +144,13 @@ navLinks.forEach(link => {
 // Dynamic Form Logic
 function renderForm() {
     dynamicSkillsContainer.innerHTML = '';
-    
+
     let currentStats = {};
     if (editingPlayerId) {
         const p = players.find(x => x.id === editingPlayerId);
         if (p && p.stats) currentStats = p.stats;
     }
-    
+
     // Add grid layout to container dynamically if needed
     dynamicSkillsContainer.style.display = 'grid';
     dynamicSkillsContainer.style.gridTemplateColumns = '1fr 1fr';
@@ -193,17 +193,17 @@ btnAddPlayerModal.addEventListener('click', () => {
     renderForm(); // render universal form
 });
 
-window.editPlayer = function(id) {
+window.editPlayer = function (id) {
     editingPlayerId = id;
     const player = players.find(p => p.id === id);
     if (!player) return;
-    
+
     document.querySelector('#add-player-modal h2').textContent = 'Oyuncuyu Düzenle';
     document.querySelector('#add-player-form button[type="submit"]').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Değişiklikleri Kaydet';
-    
+
     document.getElementById('player-name').value = player.name;
     positionSelect.value = player.position;
-    
+
     addPlayerModal.classList.add('active');
     renderForm();
 };
@@ -221,14 +221,14 @@ addPlayerModal.addEventListener('click', (e) => {
 addPlayerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!activeGroupId) return;
-    
+
     const name = document.getElementById('player-name').value;
     const position = positionSelect.value;
     const newStats = {};
     for (const key in universalAttributes) {
         newStats[key] = parseInt(document.getElementById(`skill-${key}`).value);
     }
-    
+
     if (editingPlayerId) {
         const playerIndex = players.findIndex(p => p.id === editingPlayerId);
         if (playerIndex > -1) {
@@ -255,13 +255,13 @@ addPlayerForm.addEventListener('submit', async (e) => {
     btnCloseModal.click();
 });
 
-window.deletePlayer = async function(id) {
+window.deletePlayer = async function (id) {
     if (!activeGroupId) return;
     await deleteDoc(doc(db, `groups/${activeGroupId}/players`, id));
 };
 
 // Player Availability Toggle
-window.toggleAvailability = async function(id) {
+window.toggleAvailability = async function (id) {
     if (!activeGroupId) return;
     const player = players.find(p => p.id === id);
     if (player) {
@@ -273,10 +273,10 @@ window.toggleAvailability = async function(id) {
 function createPlayerCardHTML(player) {
     const weights = positionWeights[player.position];
     let skillsHTML = '';
-    
+
     // If it's an old player without 'stats' object, fallback slightly to older attributes
-    const stats = player.stats || player; 
-    
+    const stats = player.stats || player;
+
     // Default to available if not set
     if (player.isAvailable === undefined) player.isAvailable = true;
 
@@ -322,7 +322,7 @@ function createPlayerCardHTML(player) {
 
 function renderPlayers(filterPos = 'all', searchQuery = '') {
     const grid = document.getElementById('all-players-grid');
-    
+
     let filtered = players;
     if (filterPos !== 'all') {
         filtered = filtered.filter(p => p.position === filterPos);
@@ -341,19 +341,19 @@ function renderPlayers(filterPos = 'all', searchQuery = '') {
 
 function renderRecentPlayers() {
     const grid = document.getElementById('recent-players-grid');
-    const recent = [...players].sort((a,b) => b.id - a.id).slice(0, 3);
-    
+    const recent = [...players].sort((a, b) => b.id - a.id).slice(0, 3);
+
     if (recent.length === 0) {
         grid.innerHTML = '<p style="color: var(--text-muted);">Henüz oyuncu eklenmedi.</p>';
         return;
     }
-    
+
     grid.innerHTML = recent.map(p => createPlayerCardHTML(p)).join('');
 }
 
 function updateDashboardStats() {
     document.getElementById('stat-total-players').textContent = players.length;
-    
+
     if (players.length > 0) {
         const avg = players.reduce((sum, p) => sum + parseFloat(p.rating), 0) / players.length;
         document.getElementById('stat-avg-rating').textContent = avg.toFixed(1);
@@ -418,10 +418,10 @@ document.getElementById('btn-generate-teams').addEventListener('click', () => {
     // Assing one GK to each team (Randomly distribute to create variety in base scores)
     const gk1 = goalkeepers[0];
     const gk2 = goalkeepers[1];
-    
+
     let teamA = [];
     let teamB = [];
-    
+
     if (Math.random() > 0.5) {
         teamA.push(gk1);
         teamB.push(gk2);
@@ -435,7 +435,7 @@ document.getElementById('btn-generate-teams').addEventListener('click', () => {
 
     // Group other players by position and distribute them fairly
     const positions = ['Defans', 'Orta Saha', 'Kanat', 'Forvet'];
-    
+
     positions.forEach(pos => {
         let playersInPos = outfielders.filter(p => p.position === pos);
         // Sort descending by rating (Add tiny random noise +/- 0.1 to swap players with same/close ratings)
@@ -444,10 +444,10 @@ document.getElementById('btn-generate-teams').addEventListener('click', () => {
             const ratingB = parseFloat(b.rating) + (Math.random() * 0.2 - 0.1);
             return ratingB - ratingA;
         });
-        
+
         let countA = 0; // Tracks number of players of this position in Team A
         let countB = 0; // Tracks number of players of this position in Team B
-        
+
         playersInPos.forEach(player => {
             if (countA < countB) {
                 // Rule 1: Assign to team with fewer players of this position
@@ -490,7 +490,7 @@ document.getElementById('btn-generate-teams').addEventListener('click', () => {
 function renderTeams(teamA, teamB, scoreA, scoreB) {
     document.getElementById('teams-result-container').style.display = 'flex';
     document.getElementById('tactical-boards-container').style.display = 'flex';
-    
+
     const avgA = teamA.length > 0 ? (scoreA / teamA.length).toFixed(2) : "0.00";
     const avgB = teamB.length > 0 ? (scoreB / teamB.length).toFixed(2) : "0.00";
 
@@ -521,21 +521,21 @@ function renderTeams(teamA, teamB, scoreA, scoreB) {
 // --- TACTICAL BOARDS ---
 function generatePitch(pitchId, team) {
     const pitch = document.getElementById(pitchId);
-    
+
     // Remove old tokens
     const tokens = pitch.querySelectorAll('.player-token');
     tokens.forEach(t => t.remove());
 
     const posCounts = { 'Kaleci': 0, 'Defans': 0, 'Orta Saha': 0, 'Kanat': 0, 'Forvet': 0 };
     team.forEach(p => posCounts[p.position]++);
-    
+
     const currentCounts = { 'Kaleci': 0, 'Defans': 0, 'Orta Saha': 0, 'Kanat': 0, 'Forvet': 0 };
 
     team.forEach((player, index) => {
         const token = document.createElement('div');
         token.className = 'player-token';
         token.innerHTML = `${index + 1} <span class="player-token-name">${player.name}</span>`;
-        
+
         const totalInPos = posCounts[player.position];
         const currentIdx = currentCounts[player.position];
         currentCounts[player.position]++;
@@ -555,7 +555,7 @@ function generatePitch(pitchId, team) {
         } else if (player.position === 'Kanat') {
             bottom = '65%';
             left = totalInPos === 1 ? '50%' : (currentIdx === 0 ? '20%' : '80%');
-            if(totalInPos > 2) left = `${(100 / (totalInPos + 1)) * (currentIdx + 1)}%`;
+            if (totalInPos > 2) left = `${(100 / (totalInPos + 1)) * (currentIdx + 1)}%`;
         } else if (player.position === 'Forvet') {
             bottom = '80%';
             left = `${(100 / (totalInPos + 1)) * (currentIdx + 1)}%`;
@@ -574,10 +574,10 @@ function makeDraggable(element, container) {
 
     element.addEventListener('mousedown', startDrag);
     element.addEventListener('touchstart', startDrag, { passive: false });
-    
+
     document.addEventListener('mousemove', drag);
     document.addEventListener('touchmove', drag, { passive: false });
-    
+
     document.addEventListener('mouseup', stopDrag);
     document.addEventListener('touchend', stopDrag);
 
@@ -585,7 +585,7 @@ function makeDraggable(element, container) {
         if (e.target.classList.contains('player-token-name')) return;
         if (e.type === 'touchstart') e.preventDefault(); // Prevent scrolling while dragging
         isDragging = true;
-        element.style.zIndex = '100'; 
+        element.style.zIndex = '100';
     }
 
     function drag(e) {
@@ -596,7 +596,7 @@ function makeDraggable(element, container) {
         let clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
 
         const rect = container.getBoundingClientRect();
-        
+
         let x = clientX - rect.left;
         let y = clientY - rect.top;
 
@@ -785,7 +785,7 @@ function initApp() {
             userName = user.displayName || user.email.split('@')[0];
             authOverlay.classList.remove('active');
             userWelcomeMsg.textContent = `Hoş geldin, ${userName}!`;
-            
+
             if (activeGroupId) {
                 lobbyOverlay.classList.remove('active');
                 document.getElementById('dashboard-container').style.display = 'flex';
@@ -809,8 +809,8 @@ function subscribeToMyGroups() {
     const q = query(collection(db, "groups"), where("members", "array-contains", userId));
     myGroupsUnsubscribe = onSnapshot(q, (snapshot) => {
         sidebarGroupsList.innerHTML = '';
-        const myGroups = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-        
+        const myGroups = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
         if (!activeGroupId && myGroups.length > 0) {
             switchToGroup(myGroups[0].id);
             return;
@@ -851,7 +851,7 @@ function switchToGroup(groupId) {
     lobbyErrorMsg.style.display = 'none';
     lobbyErrorMsg.style.display = 'none';
     subscribeToGroup(groupId);
-    
+
     document.querySelectorAll('#sidebar-groups-list li').forEach(li => li.classList.remove('active'));
     subscribeToMyGroups();
 }
@@ -890,7 +890,7 @@ function subscribeToGroup(groupId) {
     };
 
     membersUnsubscribe = onSnapshot(collection(db, `groups/${groupId}/members`), (snapshot) => {
-        currentMembers = snapshot.docs.map(d => ({userId: d.id, ...d.data()}));
+        currentMembers = snapshot.docs.map(d => ({ userId: d.id, ...d.data() }));
         renderMembers();
     });
 
@@ -904,7 +904,7 @@ function subscribeToGroup(groupId) {
         groupCodeDisplay.querySelector('b').textContent = groupData.id;
         groupCodeDisplay.style.display = 'flex';
         btnLeaveGroup.style.display = 'flex';
-        
+
         currentGroupAdmins = groupData.admins || [];
         if (currentGroupAdmins.includes(userId)) {
             btnPendingRequests.style.display = 'flex';
@@ -1001,17 +1001,17 @@ btnCloseLobby.addEventListener('click', () => {
 
 btnLeaveGroup.addEventListener('click', async () => {
     if (!activeGroupId) return;
-    
+
     const isOnlyAdmin = currentGroupAdmins.includes(userId) && currentGroupAdmins.length === 1;
-    const confirmMsg = isOnlyAdmin 
-        ? "Siz bu grubun tek yöneticisisiniz. Çıkarsanız grup tamamen silinecek. Onaylıyor musunuz?" 
+    const confirmMsg = isOnlyAdmin
+        ? "Siz bu grubun tek yöneticisisiniz. Çıkarsanız grup tamamen silinecek. Onaylıyor musunuz?"
         : "Bu gruptan ayrılmak istediğinize emin misiniz?";
-        
+
     if (!confirm(confirmMsg)) return;
 
     btnLeaveGroup.disabled = true;
     const groupRef = doc(db, "groups", activeGroupId);
-    
+
     try {
         if (isOnlyAdmin) {
             await deleteDoc(groupRef);
@@ -1024,10 +1024,10 @@ btnLeaveGroup.addEventListener('click', async () => {
     } catch (e) {
         console.error("Gruptan ayrılırken hata:", e);
     }
-    
+
     btnLeaveGroup.disabled = false;
     btnLeaveGroup.style.display = 'none';
-    
+
     // UI resets are handled by subscribeToMyGroups() when activeGroupId goes missing
 });
 
@@ -1064,7 +1064,7 @@ function renderRequests(requestsListArray) {
     });
 }
 
-window.approveRequest = async function(reqUserId, reqUserName) {
+window.approveRequest = async function (reqUserId, reqUserName) {
     if (!activeGroupId) return;
     const groupRef = doc(db, "groups", activeGroupId);
     await updateDoc(groupRef, {
@@ -1073,7 +1073,7 @@ window.approveRequest = async function(reqUserId, reqUserName) {
     });
 };
 
-window.rejectRequest = async function(reqUserId, reqUserName) {
+window.rejectRequest = async function (reqUserId, reqUserName) {
     if (!activeGroupId) return;
     const groupRef = doc(db, "groups", activeGroupId);
     await updateDoc(groupRef, {
