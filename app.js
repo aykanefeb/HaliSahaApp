@@ -450,20 +450,38 @@ document.getElementById('btn-generate-teams').addEventListener('click', async ()
         let countB = 0; // Tracks number of players of this position in Team B
 
         playersInPos.forEach(player => {
-            if (countA < countB) {
-                // Rule 1: Assign to team with fewer players of this position
+            // First priority: Keep overall team sizes equal
+            if (teamA.length < teamB.length) {
                 teamA.push(player);
                 scoreA += parseFloat(player.rating);
                 countA++;
-            } else if (countB < countA) {
+            } else if (teamB.length < teamA.length) {
                 teamB.push(player);
                 scoreB += parseFloat(player.rating);
                 countB++;
             } else {
-                // Rule 2: If equal count, assign to team with lower overall score
-                // Add Variety: If scores are extremely close (less than 0.3 diff), randomly assign to either team
-                if (Math.abs(scoreA - scoreB) < 0.3) {
-                    if (Math.random() > 0.5) {
+                // Team sizes are currently equal, now balance by position count
+                if (countA < countB) {
+                    teamA.push(player);
+                    scoreA += parseFloat(player.rating);
+                    countA++;
+                } else if (countB < countA) {
+                    teamB.push(player);
+                    scoreB += parseFloat(player.rating);
+                    countB++;
+                } else {
+                    // Both total sizes and position counts are equal, balance by rating score
+                    if (Math.abs(scoreA - scoreB) < 0.3) {
+                        if (Math.random() > 0.5) {
+                            teamA.push(player);
+                            scoreA += parseFloat(player.rating);
+                            countA++;
+                        } else {
+                            teamB.push(player);
+                            scoreB += parseFloat(player.rating);
+                            countB++;
+                        }
+                    } else if (scoreA <= scoreB) {
                         teamA.push(player);
                         scoreA += parseFloat(player.rating);
                         countA++;
@@ -472,14 +490,6 @@ document.getElementById('btn-generate-teams').addEventListener('click', async ()
                         scoreB += parseFloat(player.rating);
                         countB++;
                     }
-                } else if (scoreA <= scoreB) {
-                    teamA.push(player);
-                    scoreA += parseFloat(player.rating);
-                    countA++;
-                } else {
-                    teamB.push(player);
-                    scoreB += parseFloat(player.rating);
-                    countB++;
                 }
             }
         });
@@ -637,11 +647,11 @@ function renderChat() {
         const isAdmin = currentGroupAdmins.includes(userId);
         const isMine = msg.userId === userId || (!msg.userId && msg.sender === userName);
         const canDelete = isMine || isAdmin;
-        
+
         div.className = `message ${isMine ? 'user' : 'other'}`;
-        
+
         div.innerHTML = `<strong>${isMine ? 'Sen' : msg.sender}:</strong> ${msg.text}`;
-        
+
         if (canDelete) {
             // Sağ tık (Masaüstü)
             div.addEventListener('contextmenu', (e) => {
@@ -656,11 +666,11 @@ function renderChat() {
                     deleteMessage(msg.id);
                 }, 600);
             }, { passive: true });
-            
+
             div.addEventListener('touchend', () => clearTimeout(pressTimer));
             div.addEventListener('touchmove', () => clearTimeout(pressTimer));
         }
-        
+
         chatMessages.appendChild(div);
     });
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -683,7 +693,7 @@ async function sendMessage() {
     await setDoc(doc(db, `groups/${activeGroupId}/messages`, newId), newMsg);
 }
 
-window.deleteMessage = async function(msgId) {
+window.deleteMessage = async function (msgId) {
     if (!activeGroupId) return;
     if (confirm("Bu mesajı silmek istediğinize emin misiniz?")) {
         await deleteDoc(doc(db, `groups/${activeGroupId}/messages`, msgId));
@@ -812,7 +822,7 @@ btnResetPassword.addEventListener('click', async () => {
         showAuthError("Lütfen e-posta adresinizi girin.");
         return;
     }
-    
+
     try {
         btnResetPassword.disabled = true;
         await sendPasswordResetEmail(auth, email);
@@ -971,14 +981,14 @@ function subscribeToGroup(groupId) {
             const isTargetTeamBuilder = currentGroupTeamBuilders.includes(data.userId);
             const li = document.createElement('li');
             li.className = 'chat-member-item';
-            
+
             let roleBadge = '';
             if (isTargetAdmin) {
                 roleBadge = '<span class="role-badge admin-badge">Admin</span>';
             } else if (isTargetTeamBuilder) {
                 roleBadge = '<span class="role-badge tb-badge">Takım Kurucu</span>';
             }
-            
+
             let content = `
                 <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
                     <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span> 
@@ -986,7 +996,7 @@ function subscribeToGroup(groupId) {
                     ${roleBadge}
                 </div>
             `;
-            
+
             if (isAdmin && data.userId !== userId) {
                 let actionBtns = '';
                 if (!isTargetAdmin) {
@@ -997,7 +1007,7 @@ function subscribeToGroup(groupId) {
                 actionBtns += `<button class="kick-btn" onclick="kickMember('${data.userId}')" title="Gruptan At"><i class="fa-solid fa-circle-minus"></i></button>`;
                 content += `<div style="display:flex; gap:6px; flex-shrink:0;">${actionBtns}</div>`;
             }
-            
+
             li.innerHTML = content;
             memberList.appendChild(li);
         });
@@ -1217,7 +1227,7 @@ window.rejectRequest = async function (reqUserId, reqUserName) {
     });
 };
 
-window.kickMember = async function(targetUserId) {
+window.kickMember = async function (targetUserId) {
     if (!activeGroupId) return;
     if (confirm("Bu kullanıcıyı gruptan atmak istediğinize emin misiniz?")) {
         const groupRef = doc(db, "groups", activeGroupId);
@@ -1230,7 +1240,7 @@ window.kickMember = async function(targetUserId) {
     }
 };
 
-window.toggleTeamBuilder = async function(targetUserId, makeTeamBuilder) {
+window.toggleTeamBuilder = async function (targetUserId, makeTeamBuilder) {
     if (!activeGroupId) return;
     const groupRef = doc(db, "groups", activeGroupId);
     if (makeTeamBuilder) {
@@ -1399,7 +1409,7 @@ async function importPlayerPool() {
         const skippedListEl = document.getElementById('result-skipped-list');
         if (skipped.length > 0) {
             document.getElementById('result-skipped-section').style.display = 'block';
-            skippedListEl.innerHTML = skipped.map(p => 
+            skippedListEl.innerHTML = skipped.map(p =>
                 `<li><i class="fa-solid fa-user"></i> ${p.name} <small style="color:var(--text-muted)">(${p.position})</small></li>`
             ).join('');
         } else {
