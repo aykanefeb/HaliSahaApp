@@ -1,21 +1,21 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, onSnapshot, getDoc, updateDoc, arrayUnion, arrayRemove, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, setDoc, deleteDoc, doc, onSnapshot, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCHJa9W8UtESJyJMAR1f60gh5Rw35SfCCs",
-  authDomain: "regista-bd253.firebaseapp.com",
-  projectId: "regista-bd253",
-  storageBucket: "regista-bd253.firebasestorage.app",
-  messagingSenderId: "800859981775",
-  appId: "1:800859981775:web:a78ec7700966198e70b4ba"
+    apiKey: "AIzaSyCHJa9W8UtESJyJMAR1f60gh5Rw35SfCCs",
+    authDomain: "regista-bd253.firebaseapp.com",
+    projectId: "regista-bd253",
+    storageBucket: "regista-bd253.firebasestorage.app",
+    messagingSenderId: "800859981775",
+    appId: "1:800859981775:web:a78ec7700966198e70b4ba"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// State Management
+// State Management. aaaaa
 let players = [];
 let messages = [];
 let editingPlayerId = null;
@@ -25,6 +25,7 @@ let userId = null;
 let userName = null;
 let activeGroupId = localStorage.getItem('matchmaker_activeGroupId');
 let currentGroupAdmins = [];
+let currentGroupTeamBuilders = [];
 
 let playersUnsubscribe = null;
 let messagesUnsubscribe = null;
@@ -101,12 +102,12 @@ const universalAttributes = {
 function calculateRating(stats, position) {
     const weights = positionWeights[position];
     let score = 0;
-    
+
     for (const key in weights) {
         const val = stats[key] || 50;
         score += val * weights[key].weight;
     }
-    
+
     // Convert to 5-star scale
     return (score / 20).toFixed(1);
 }
@@ -144,13 +145,13 @@ navLinks.forEach(link => {
 // Dynamic Form Logic
 function renderForm() {
     dynamicSkillsContainer.innerHTML = '';
-    
+
     let currentStats = {};
     if (editingPlayerId) {
         const p = players.find(x => x.id === editingPlayerId);
         if (p && p.stats) currentStats = p.stats;
     }
-    
+
     // Add grid layout to container dynamically if needed
     dynamicSkillsContainer.style.display = 'grid';
     dynamicSkillsContainer.style.gridTemplateColumns = '1fr 1fr';
@@ -193,17 +194,17 @@ btnAddPlayerModal.addEventListener('click', () => {
     renderForm(); // render universal form
 });
 
-window.editPlayer = function(id) {
+window.editPlayer = function (id) {
     editingPlayerId = id;
     const player = players.find(p => p.id === id);
     if (!player) return;
-    
+
     document.querySelector('#add-player-modal h2').textContent = 'Oyuncuyu Düzenle';
     document.querySelector('#add-player-form button[type="submit"]').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Değişiklikleri Kaydet';
-    
+
     document.getElementById('player-name').value = player.name;
     positionSelect.value = player.position;
-    
+
     addPlayerModal.classList.add('active');
     renderForm();
 };
@@ -221,14 +222,14 @@ addPlayerModal.addEventListener('click', (e) => {
 addPlayerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!activeGroupId) return;
-    
+
     const name = document.getElementById('player-name').value;
     const position = positionSelect.value;
     const newStats = {};
     for (const key in universalAttributes) {
         newStats[key] = parseInt(document.getElementById(`skill-${key}`).value);
     }
-    
+
     if (editingPlayerId) {
         const playerIndex = players.findIndex(p => p.id === editingPlayerId);
         if (playerIndex > -1) {
@@ -255,13 +256,13 @@ addPlayerForm.addEventListener('submit', async (e) => {
     btnCloseModal.click();
 });
 
-window.deletePlayer = async function(id) {
+window.deletePlayer = async function (id) {
     if (!activeGroupId) return;
     await deleteDoc(doc(db, `groups/${activeGroupId}/players`, id));
 };
 
 // Player Availability Toggle
-window.toggleAvailability = async function(id) {
+window.toggleAvailability = async function (id) {
     if (!activeGroupId) return;
     const player = players.find(p => p.id === id);
     if (player) {
@@ -273,10 +274,10 @@ window.toggleAvailability = async function(id) {
 function createPlayerCardHTML(player) {
     const weights = positionWeights[player.position];
     let skillsHTML = '';
-    
+
     // If it's an old player without 'stats' object, fallback slightly to older attributes
-    const stats = player.stats || player; 
-    
+    const stats = player.stats || player;
+
     // Default to available if not set
     if (player.isAvailable === undefined) player.isAvailable = true;
 
@@ -322,7 +323,7 @@ function createPlayerCardHTML(player) {
 
 function renderPlayers(filterPos = 'all', searchQuery = '') {
     const grid = document.getElementById('all-players-grid');
-    
+
     let filtered = players;
     if (filterPos !== 'all') {
         filtered = filtered.filter(p => p.position === filterPos);
@@ -341,19 +342,19 @@ function renderPlayers(filterPos = 'all', searchQuery = '') {
 
 function renderRecentPlayers() {
     const grid = document.getElementById('recent-players-grid');
-    const recent = [...players].sort((a,b) => b.id - a.id).slice(0, 3);
-    
+    const recent = [...players].sort((a, b) => b.id - a.id).slice(0, 3);
+
     if (recent.length === 0) {
         grid.innerHTML = '<p style="color: var(--text-muted);">Henüz oyuncu eklenmedi.</p>';
         return;
     }
-    
+
     grid.innerHTML = recent.map(p => createPlayerCardHTML(p)).join('');
 }
 
 function updateDashboardStats() {
     document.getElementById('stat-total-players').textContent = players.length;
-    
+
     if (players.length > 0) {
         const avg = players.reduce((sum, p) => sum + parseFloat(p.rating), 0) / players.length;
         document.getElementById('stat-avg-rating').textContent = avg.toFixed(1);
@@ -375,7 +376,7 @@ document.getElementById('search-player').addEventListener('input', (e) => {
 
 
 // --- TEAM BUILDER ALGORITHM ---
-document.getElementById('btn-generate-teams').addEventListener('click', () => {
+document.getElementById('btn-generate-teams').addEventListener('click', async () => {
     const errorDiv = document.getElementById('teambuilder-error');
     if (errorDiv) errorDiv.style.display = 'none';
 
@@ -418,10 +419,10 @@ document.getElementById('btn-generate-teams').addEventListener('click', () => {
     // Assing one GK to each team (Randomly distribute to create variety in base scores)
     const gk1 = goalkeepers[0];
     const gk2 = goalkeepers[1];
-    
+
     let teamA = [];
     let teamB = [];
-    
+
     if (Math.random() > 0.5) {
         teamA.push(gk1);
         teamB.push(gk2);
@@ -435,7 +436,7 @@ document.getElementById('btn-generate-teams').addEventListener('click', () => {
 
     // Group other players by position and distribute them fairly
     const positions = ['Defans', 'Orta Saha', 'Kanat', 'Forvet'];
-    
+
     positions.forEach(pos => {
         let playersInPos = outfielders.filter(p => p.position === pos);
         // Sort descending by rating (Add tiny random noise +/- 0.1 to swap players with same/close ratings)
@@ -444,10 +445,10 @@ document.getElementById('btn-generate-teams').addEventListener('click', () => {
             const ratingB = parseFloat(b.rating) + (Math.random() * 0.2 - 0.1);
             return ratingB - ratingA;
         });
-        
+
         let countA = 0; // Tracks number of players of this position in Team A
         let countB = 0; // Tracks number of players of this position in Team B
-        
+
         playersInPos.forEach(player => {
             if (countA < countB) {
                 // Rule 1: Assign to team with fewer players of this position
@@ -484,13 +485,21 @@ document.getElementById('btn-generate-teams').addEventListener('click', () => {
         });
     });
 
-    renderTeams(teamA, teamB, scoreA, scoreB);
+    // Save to Firestore so everyone sees the same teams
+    const teamsData = {
+        teamA: teamA.map(p => ({ id: p.id, name: p.name, position: p.position, rating: p.rating })),
+        teamB: teamB.map(p => ({ id: p.id, name: p.name, position: p.position, rating: p.rating })),
+        scoreA,
+        scoreB,
+        createdAt: new Date().toISOString()
+    };
+    await setDoc(doc(db, `groups/${activeGroupId}/meta`, 'generatedTeams'), teamsData);
 });
 
 function renderTeams(teamA, teamB, scoreA, scoreB) {
     document.getElementById('teams-result-container').style.display = 'flex';
     document.getElementById('tactical-boards-container').style.display = 'flex';
-    
+
     const avgA = teamA.length > 0 ? (scoreA / teamA.length).toFixed(2) : "0.00";
     const avgB = teamB.length > 0 ? (scoreB / teamB.length).toFixed(2) : "0.00";
 
@@ -521,21 +530,21 @@ function renderTeams(teamA, teamB, scoreA, scoreB) {
 // --- TACTICAL BOARDS ---
 function generatePitch(pitchId, team) {
     const pitch = document.getElementById(pitchId);
-    
+
     // Remove old tokens
     const tokens = pitch.querySelectorAll('.player-token');
     tokens.forEach(t => t.remove());
 
     const posCounts = { 'Kaleci': 0, 'Defans': 0, 'Orta Saha': 0, 'Kanat': 0, 'Forvet': 0 };
     team.forEach(p => posCounts[p.position]++);
-    
+
     const currentCounts = { 'Kaleci': 0, 'Defans': 0, 'Orta Saha': 0, 'Kanat': 0, 'Forvet': 0 };
 
     team.forEach((player, index) => {
         const token = document.createElement('div');
         token.className = 'player-token';
         token.innerHTML = `${index + 1} <span class="player-token-name">${player.name}</span>`;
-        
+
         const totalInPos = posCounts[player.position];
         const currentIdx = currentCounts[player.position];
         currentCounts[player.position]++;
@@ -555,7 +564,7 @@ function generatePitch(pitchId, team) {
         } else if (player.position === 'Kanat') {
             bottom = '65%';
             left = totalInPos === 1 ? '50%' : (currentIdx === 0 ? '20%' : '80%');
-            if(totalInPos > 2) left = `${(100 / (totalInPos + 1)) * (currentIdx + 1)}%`;
+            if (totalInPos > 2) left = `${(100 / (totalInPos + 1)) * (currentIdx + 1)}%`;
         } else if (player.position === 'Forvet') {
             bottom = '80%';
             left = `${(100 / (totalInPos + 1)) * (currentIdx + 1)}%`;
@@ -574,10 +583,10 @@ function makeDraggable(element, container) {
 
     element.addEventListener('mousedown', startDrag);
     element.addEventListener('touchstart', startDrag, { passive: false });
-    
+
     document.addEventListener('mousemove', drag);
     document.addEventListener('touchmove', drag, { passive: false });
-    
+
     document.addEventListener('mouseup', stopDrag);
     document.addEventListener('touchend', stopDrag);
 
@@ -585,7 +594,7 @@ function makeDraggable(element, container) {
         if (e.target.classList.contains('player-token-name')) return;
         if (e.type === 'touchstart') e.preventDefault(); // Prevent scrolling while dragging
         isDragging = true;
-        element.style.zIndex = '100'; 
+        element.style.zIndex = '100';
     }
 
     function drag(e) {
@@ -596,7 +605,7 @@ function makeDraggable(element, container) {
         let clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
 
         const rect = container.getBoundingClientRect();
-        
+
         let x = clientX - rect.left;
         let y = clientY - rect.top;
 
@@ -625,8 +634,33 @@ function renderChat() {
     chatMessages.innerHTML = '<div class="message system">Sohbete hoş geldiniz! Takım organizasyonu için buradan mesajlaşabilirsiniz.</div>';
     messages.forEach(msg => {
         const div = document.createElement('div');
-        div.className = `message ${msg.sender === userName ? 'user' : 'other'}`;
-        div.innerHTML = `<strong>${msg.sender === userName ? 'Sen' : msg.sender}:</strong> ${msg.text}`;
+        const isAdmin = currentGroupAdmins.includes(userId);
+        const isMine = msg.userId === userId || (!msg.userId && msg.sender === userName);
+        const canDelete = isMine || isAdmin;
+        
+        div.className = `message ${isMine ? 'user' : 'other'}`;
+        
+        div.innerHTML = `<strong>${isMine ? 'Sen' : msg.sender}:</strong> ${msg.text}`;
+        
+        if (canDelete) {
+            // Sağ tık (Masaüstü)
+            div.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                deleteMessage(msg.id);
+            });
+
+            // Basılı tutma (Mobil)
+            let pressTimer;
+            div.addEventListener('touchstart', (e) => {
+                pressTimer = setTimeout(() => {
+                    deleteMessage(msg.id);
+                }, 600);
+            }, { passive: true });
+            
+            div.addEventListener('touchend', () => clearTimeout(pressTimer));
+            div.addEventListener('touchmove', () => clearTimeout(pressTimer));
+        }
+        
         chatMessages.appendChild(div);
     });
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -639,6 +673,7 @@ async function sendMessage() {
     const newId = Date.now().toString();
     const newMsg = {
         id: newId,
+        userId: userId,
         sender: userName,
         text: text,
         timestamp: new Date().toISOString()
@@ -647,6 +682,13 @@ async function sendMessage() {
     chatInput.value = ''; // Clear immediately for UX
     await setDoc(doc(db, `groups/${activeGroupId}/messages`, newId), newMsg);
 }
+
+window.deleteMessage = async function(msgId) {
+    if (!activeGroupId) return;
+    if (confirm("Bu mesajı silmek istediğinize emin misiniz?")) {
+        await deleteDoc(doc(db, `groups/${activeGroupId}/messages`, msgId));
+    }
+};
 
 btnSendMessage.addEventListener('click', sendMessage);
 chatInput.addEventListener('keypress', (e) => {
@@ -658,26 +700,49 @@ chatInput.addEventListener('keypress', (e) => {
 const authOverlay = document.getElementById('auth-overlay');
 const loginForm = document.getElementById('login-form-container');
 const registerForm = document.getElementById('register-form-container');
+const forgotPasswordForm = document.getElementById('forgot-password-form-container');
 const showRegister = document.getElementById('show-register');
 const showLogin = document.getElementById('show-login');
+const showForgotPassword = document.getElementById('show-forgot-password');
+const showLoginFromReset = document.getElementById('show-login-from-reset');
 const authErrorMsg = document.getElementById('auth-error-msg');
 const userWelcomeMsg = document.getElementById('user-welcome-msg');
 
 const btnLogin = document.getElementById('btn-login');
 const btnRegister = document.getElementById('btn-register');
+const btnResetPassword = document.getElementById('btn-reset-password');
 const btnLogout = document.getElementById('btn-logout');
 const btnLogoutLobby = document.getElementById('btn-logout-lobby');
 
 showRegister.addEventListener('click', (e) => {
     e.preventDefault();
     loginForm.style.display = 'none';
+    forgotPasswordForm.style.display = 'none';
     registerForm.style.display = 'block';
+    authErrorMsg.style.display = 'none';
 });
 
 showLogin.addEventListener('click', (e) => {
     e.preventDefault();
     registerForm.style.display = 'none';
+    forgotPasswordForm.style.display = 'none';
     loginForm.style.display = 'block';
+    authErrorMsg.style.display = 'none';
+});
+
+showForgotPassword.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'none';
+    forgotPasswordForm.style.display = 'block';
+    authErrorMsg.style.display = 'none';
+});
+
+showLoginFromReset.addEventListener('click', (e) => {
+    e.preventDefault();
+    forgotPasswordForm.style.display = 'none';
+    loginForm.style.display = 'block';
+    authErrorMsg.style.display = 'none';
 });
 
 btnRegister.addEventListener('click', async () => {
@@ -694,7 +759,7 @@ btnRegister.addEventListener('click', async () => {
         btnRegister.disabled = true;
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
-        // User will be updated via onAuthStateChanged
+        window.location.reload();
     } catch (error) {
         showAuthError(translateAuthError(error.code));
     } finally {
@@ -741,8 +806,27 @@ async function handleLogout() {
     }
 }
 
-function showAuthError(msg) {
+btnResetPassword.addEventListener('click', async () => {
+    const email = document.getElementById('reset-email').value.trim();
+    if (!email) {
+        showAuthError("Lütfen e-posta adresinizi girin.");
+        return;
+    }
+    
+    try {
+        btnResetPassword.disabled = true;
+        await sendPasswordResetEmail(auth, email);
+        showAuthError("Şifre sıfırlama bağlantısı e-posta adresinize gönderildi!", true);
+    } catch (error) {
+        showAuthError(translateAuthError(error.code));
+    } finally {
+        btnResetPassword.disabled = false;
+    }
+});
+
+function showAuthError(msg, isSuccess = false) {
     authErrorMsg.textContent = msg;
+    authErrorMsg.style.color = isSuccess ? '#10b981' : '#ef4444';
     authErrorMsg.style.display = 'block';
 }
 
@@ -785,7 +869,7 @@ function initApp() {
             userName = user.displayName || user.email.split('@')[0];
             authOverlay.classList.remove('active');
             userWelcomeMsg.textContent = `Hoş geldin, ${userName}!`;
-            
+
             if (activeGroupId) {
                 lobbyOverlay.classList.remove('active');
                 document.getElementById('dashboard-container').style.display = 'flex';
@@ -809,8 +893,8 @@ function subscribeToMyGroups() {
     const q = query(collection(db, "groups"), where("members", "array-contains", userId));
     myGroupsUnsubscribe = onSnapshot(q, (snapshot) => {
         sidebarGroupsList.innerHTML = '';
-        const myGroups = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-        
+        const myGroups = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
         if (!activeGroupId && myGroups.length > 0) {
             switchToGroup(myGroups[0].id);
             return;
@@ -851,7 +935,7 @@ function switchToGroup(groupId) {
     lobbyErrorMsg.style.display = 'none';
     lobbyErrorMsg.style.display = 'none';
     subscribeToGroup(groupId);
-    
+
     document.querySelectorAll('#sidebar-groups-list li').forEach(li => li.classList.remove('active'));
     subscribeToMyGroups();
 }
@@ -879,18 +963,48 @@ function subscribeToGroup(groupId) {
         if (!memberList) return;
         memberList.innerHTML = '';
         const now = Date.now();
+        const isAdmin = currentGroupAdmins.includes(userId);
+
         currentMembers.forEach(data => {
             const isOnline = now - data.lastActive < 60000;
+            const isTargetAdmin = currentGroupAdmins.includes(data.userId);
+            const isTargetTeamBuilder = currentGroupTeamBuilders.includes(data.userId);
             const li = document.createElement('li');
             li.className = 'chat-member-item';
-            li.innerHTML = `<span class="status-dot ${isOnline ? 'online' : 'offline'}"></span> 
-                            <span>${data.userName} ${data.userId === userId ? '<small style="color:var(--text-muted)">(Sen)</small>' : ''}</span>`;
+            
+            let roleBadge = '';
+            if (isTargetAdmin) {
+                roleBadge = '<span class="role-badge admin-badge">Admin</span>';
+            } else if (isTargetTeamBuilder) {
+                roleBadge = '<span class="role-badge tb-badge">Takım Kurucu</span>';
+            }
+            
+            let content = `
+                <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                    <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span> 
+                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.userName} ${data.userId === userId ? '<small style="color:var(--text-muted)">(Sen)</small>' : ''}</span>
+                    ${roleBadge}
+                </div>
+            `;
+            
+            if (isAdmin && data.userId !== userId) {
+                let actionBtns = '';
+                if (!isTargetAdmin) {
+                    const tbIcon = isTargetTeamBuilder ? 'fa-solid fa-star' : 'fa-regular fa-star';
+                    const tbTitle = isTargetTeamBuilder ? 'Takım Kurucu Yetkisini Kaldır' : 'Takım Kurucu Yap';
+                    actionBtns += `<button class="teambuilder-toggle-btn ${isTargetTeamBuilder ? 'active' : ''}" onclick="toggleTeamBuilder('${data.userId}', ${!isTargetTeamBuilder})" title="${tbTitle}"><i class="${tbIcon}"></i></button>`;
+                }
+                actionBtns += `<button class="kick-btn" onclick="kickMember('${data.userId}')" title="Gruptan At"><i class="fa-solid fa-circle-minus"></i></button>`;
+                content += `<div style="display:flex; gap:6px; flex-shrink:0;">${actionBtns}</div>`;
+            }
+            
+            li.innerHTML = content;
             memberList.appendChild(li);
         });
     };
 
     membersUnsubscribe = onSnapshot(collection(db, `groups/${groupId}/members`), (snapshot) => {
-        currentMembers = snapshot.docs.map(d => ({userId: d.id, ...d.data()}));
+        currentMembers = snapshot.docs.map(d => ({ userId: d.id, ...d.data() }));
         renderMembers();
     });
 
@@ -904,8 +1018,17 @@ function subscribeToGroup(groupId) {
         groupCodeDisplay.querySelector('b').textContent = groupData.id;
         groupCodeDisplay.style.display = 'flex';
         btnLeaveGroup.style.display = 'flex';
-        
+
         currentGroupAdmins = groupData.admins || [];
+        currentGroupTeamBuilders = groupData.teamBuilders || [];
+
+        // Show/hide team builder button based on role
+        const btnGenerateTeams = document.getElementById('btn-generate-teams');
+        const canBuildTeams = currentGroupAdmins.includes(userId) || currentGroupTeamBuilders.includes(userId);
+        if (btnGenerateTeams) {
+            btnGenerateTeams.style.display = canBuildTeams ? 'inline-flex' : 'none';
+        }
+
         if (currentGroupAdmins.includes(userId)) {
             btnPendingRequests.style.display = 'flex';
             const reqCount = (groupData.requests || []).length;
@@ -915,6 +1038,16 @@ function subscribeToGroup(groupId) {
         } else {
             btnPendingRequests.style.display = 'none';
         }
+
+        // Re-render members immediately when roles change
+        renderMembers();
+    });
+
+    // Listen for generated teams
+    onSnapshot(doc(db, `groups/${groupId}/meta`, 'generatedTeams'), (d) => {
+        if (!d.exists()) return;
+        const data = d.data();
+        renderTeams(data.teamA, data.teamB, data.scoreA, data.scoreB);
     });
 
     playersUnsubscribe = onSnapshot(collection(db, `groups/${groupId}/players`), (snapshot) => {
@@ -946,9 +1079,11 @@ btnCreateGroup.addEventListener('click', async () => {
         id: groupId,
         name: name,
         admins: [userId],
+        teamBuilders: [],
         members: [userId],
         requests: []
     });
+    await setDoc(doc(db, `groups/${groupId}/members`, userId), { userName: userName, lastActive: 0 });
     btnCreateGroup.disabled = false;
     newGroupNameInput.value = '';
     switchToGroup(groupId);
@@ -1001,17 +1136,17 @@ btnCloseLobby.addEventListener('click', () => {
 
 btnLeaveGroup.addEventListener('click', async () => {
     if (!activeGroupId) return;
-    
+
     const isOnlyAdmin = currentGroupAdmins.includes(userId) && currentGroupAdmins.length === 1;
-    const confirmMsg = isOnlyAdmin 
-        ? "Siz bu grubun tek yöneticisisiniz. Çıkarsanız grup tamamen silinecek. Onaylıyor musunuz?" 
+    const confirmMsg = isOnlyAdmin
+        ? "Siz bu grubun tek yöneticisisiniz. Çıkarsanız grup tamamen silinecek. Onaylıyor musunuz?"
         : "Bu gruptan ayrılmak istediğinize emin misiniz?";
-        
+
     if (!confirm(confirmMsg)) return;
 
     btnLeaveGroup.disabled = true;
     const groupRef = doc(db, "groups", activeGroupId);
-    
+
     try {
         if (isOnlyAdmin) {
             await deleteDoc(groupRef);
@@ -1024,10 +1159,10 @@ btnLeaveGroup.addEventListener('click', async () => {
     } catch (e) {
         console.error("Gruptan ayrılırken hata:", e);
     }
-    
+
     btnLeaveGroup.disabled = false;
     btnLeaveGroup.style.display = 'none';
-    
+
     // UI resets are handled by subscribeToMyGroups() when activeGroupId goes missing
 });
 
@@ -1064,22 +1199,270 @@ function renderRequests(requestsListArray) {
     });
 }
 
-window.approveRequest = async function(reqUserId, reqUserName) {
+window.approveRequest = async function (reqUserId, reqUserName) {
     if (!activeGroupId) return;
     const groupRef = doc(db, "groups", activeGroupId);
     await updateDoc(groupRef, {
         members: arrayUnion(reqUserId),
         requests: arrayRemove({ userId: reqUserId, userName: reqUserName })
     });
+    await setDoc(doc(db, `groups/${activeGroupId}/members`, reqUserId), { userName: reqUserName, lastActive: 0 });
 };
 
-window.rejectRequest = async function(reqUserId, reqUserName) {
+window.rejectRequest = async function (reqUserId, reqUserName) {
     if (!activeGroupId) return;
     const groupRef = doc(db, "groups", activeGroupId);
     await updateDoc(groupRef, {
         requests: arrayRemove({ userId: reqUserId, userName: reqUserName })
     });
 };
+
+window.kickMember = async function(targetUserId) {
+    if (!activeGroupId) return;
+    if (confirm("Bu kullanıcıyı gruptan atmak istediğinize emin misiniz?")) {
+        const groupRef = doc(db, "groups", activeGroupId);
+        await updateDoc(groupRef, {
+            members: arrayRemove(targetUserId),
+            admins: arrayRemove(targetUserId),
+            teamBuilders: arrayRemove(targetUserId)
+        });
+        await deleteDoc(doc(db, `groups/${activeGroupId}/members`, targetUserId));
+    }
+};
+
+window.toggleTeamBuilder = async function(targetUserId, makeTeamBuilder) {
+    if (!activeGroupId) return;
+    const groupRef = doc(db, "groups", activeGroupId);
+    if (makeTeamBuilder) {
+        await updateDoc(groupRef, {
+            teamBuilders: arrayUnion(targetUserId)
+        });
+    } else {
+        await updateDoc(groupRef, {
+            teamBuilders: arrayRemove(targetUserId)
+        });
+    }
+};
+
+// --- SHARE & IMPORT PLAYER POOL ---
+function normalizeName(name) {
+    return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+async function sharePlayerPool() {
+    if (!activeGroupId) return;
+
+    const shareBtn = document.getElementById('btn-share-pool');
+    const shareModal = document.getElementById('share-code-modal');
+    const shareCodeEl = document.getElementById('share-code-value');
+    const shareCountEl = document.getElementById('share-player-count');
+    const shareErrorEl = document.getElementById('share-error-msg');
+
+    if (players.length === 0) {
+        shareErrorEl.textContent = 'Paylaşılacak oyuncu bulunamadı.';
+        shareErrorEl.style.display = 'block';
+        setTimeout(() => shareErrorEl.style.display = 'none', 3000);
+        return;
+    }
+
+    shareBtn.disabled = true;
+    shareBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Oluşturuluyor...';
+    shareErrorEl.style.display = 'none';
+
+    try {
+        const code = Math.random().toString(36).substr(2, 6).toUpperCase();
+        const now = Date.now();
+        const expiresAt = now + 3600000; // 1 hour
+
+        const groupSnap = await getDoc(doc(db, 'groups', activeGroupId));
+        const groupName = groupSnap.exists() ? groupSnap.data().name : 'Bilinmeyen Grup';
+
+        const playerSnapshot = players.map(p => ({
+            name: p.name,
+            position: p.position,
+            stats: p.stats || {},
+            rating: p.rating,
+            isAvailable: p.isAvailable !== undefined ? p.isAvailable : true
+        }));
+
+        await setDoc(doc(db, 'shareCodes', code), {
+            code: code,
+            sourceGroupId: activeGroupId,
+            sourceGroupName: groupName,
+            createdBy: userId,
+            createdAt: now,
+            expiresAt: expiresAt,
+            players: playerSnapshot
+        });
+
+        shareCodeEl.textContent = code;
+        shareCountEl.textContent = `${playerSnapshot.length} oyuncu paylaşılacak`;
+        shareModal.classList.add('active');
+    } catch (error) {
+        console.error('Paylaşım hatası:', error);
+        shareErrorEl.textContent = 'Paylaşım kodu oluşturulurken bir hata oluştu.';
+        shareErrorEl.style.display = 'block';
+        setTimeout(() => shareErrorEl.style.display = 'none', 3000);
+    } finally {
+        shareBtn.disabled = false;
+        shareBtn.innerHTML = '<i class="fa-solid fa-share-nodes"></i> Paylaş';
+    }
+}
+
+async function importPlayerPool() {
+    if (!activeGroupId) return;
+
+    const codeInput = document.getElementById('import-code-input');
+    const importBtn = document.getElementById('btn-import-execute');
+    const importModal = document.getElementById('import-pool-modal');
+    const resultModal = document.getElementById('import-result-modal');
+    const importErrorEl = document.getElementById('import-error-msg');
+
+    const code = codeInput.value.trim().toUpperCase();
+    if (!code || code.length !== 6) {
+        importErrorEl.textContent = 'Lütfen 6 haneli paylaşım kodunu girin.';
+        importErrorEl.style.display = 'block';
+        return;
+    }
+
+    importBtn.disabled = true;
+    importBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İçe Aktarılıyor...';
+    importErrorEl.style.display = 'none';
+
+    try {
+        const shareSnap = await getDoc(doc(db, 'shareCodes', code));
+
+        if (!shareSnap.exists()) {
+            importErrorEl.textContent = 'Bu paylaşım kodu bulunamadı.';
+            importErrorEl.style.display = 'block';
+            importBtn.disabled = false;
+            importBtn.innerHTML = '<i class="fa-solid fa-download"></i> İçe Aktar';
+            return;
+        }
+
+        const shareData = shareSnap.data();
+
+        if (Date.now() > shareData.expiresAt) {
+            importErrorEl.textContent = 'Bu paylaşım kodunun süresi dolmuş.';
+            importErrorEl.style.display = 'block';
+            importBtn.disabled = false;
+            importBtn.innerHTML = '<i class="fa-solid fa-download"></i> İçe Aktar';
+            return;
+        }
+
+        if (shareData.sourceGroupId === activeGroupId) {
+            importErrorEl.textContent = 'Kendi grubunuzun havuzunu içe aktaramazsınız.';
+            importErrorEl.style.display = 'block';
+            importBtn.disabled = false;
+            importBtn.innerHTML = '<i class="fa-solid fa-download"></i> İçe Aktar';
+            return;
+        }
+
+        const incomingPlayers = shareData.players || [];
+        const existingNames = new Set(players.map(p => normalizeName(p.name)));
+
+        const toAdd = [];
+        const skipped = [];
+
+        incomingPlayers.forEach(p => {
+            if (existingNames.has(normalizeName(p.name))) {
+                skipped.push(p);
+            } else {
+                toAdd.push(p);
+            }
+        });
+
+        if (toAdd.length > 0) {
+            const batch = writeBatch(db);
+            toAdd.forEach(p => {
+                const newId = Date.now().toString() + Math.random().toString(36).substr(2, 4);
+                const playerDoc = doc(db, `groups/${activeGroupId}/players`, newId);
+                batch.set(playerDoc, {
+                    id: newId,
+                    name: p.name,
+                    position: p.position,
+                    stats: p.stats || {},
+                    rating: p.rating || '0.0',
+                    isAvailable: true
+                });
+            });
+            await batch.commit();
+        }
+
+        importModal.classList.remove('active');
+        codeInput.value = '';
+
+        document.getElementById('result-added-count').textContent = toAdd.length;
+        document.getElementById('result-skipped-count').textContent = skipped.length;
+        document.getElementById('result-source-name').textContent = shareData.sourceGroupName;
+
+        const skippedListEl = document.getElementById('result-skipped-list');
+        if (skipped.length > 0) {
+            document.getElementById('result-skipped-section').style.display = 'block';
+            skippedListEl.innerHTML = skipped.map(p => 
+                `<li><i class="fa-solid fa-user"></i> ${p.name} <small style="color:var(--text-muted)">(${p.position})</small></li>`
+            ).join('');
+        } else {
+            document.getElementById('result-skipped-section').style.display = 'none';
+        }
+
+        resultModal.classList.add('active');
+
+    } catch (error) {
+        console.error('İçe aktarma hatası:', error);
+        importErrorEl.textContent = 'İçe aktarma sırasında bir hata oluştu.';
+        importErrorEl.style.display = 'block';
+    } finally {
+        importBtn.disabled = false;
+        importBtn.innerHTML = '<i class="fa-solid fa-download"></i> İçe Aktar';
+    }
+}
+
+// Share Pool Button
+document.getElementById('btn-share-pool').addEventListener('click', sharePlayerPool);
+
+// Import Pool Modal Open
+document.getElementById('btn-import-pool').addEventListener('click', () => {
+    document.getElementById('import-pool-modal').classList.add('active');
+    document.getElementById('import-error-msg').style.display = 'none';
+    document.getElementById('import-code-input').value = '';
+});
+
+// Import Execute Button
+document.getElementById('btn-import-execute').addEventListener('click', importPlayerPool);
+
+// Close modals
+document.getElementById('btn-close-share-modal').addEventListener('click', () => {
+    document.getElementById('share-code-modal').classList.remove('active');
+});
+
+document.getElementById('btn-close-import-modal').addEventListener('click', () => {
+    document.getElementById('import-pool-modal').classList.remove('active');
+});
+
+document.getElementById('btn-close-result-modal').addEventListener('click', () => {
+    document.getElementById('import-result-modal').classList.remove('active');
+});
+
+// Copy share code
+document.getElementById('btn-copy-share-code').addEventListener('click', () => {
+    const code = document.getElementById('share-code-value').textContent;
+    navigator.clipboard.writeText(code);
+    const btn = document.getElementById('btn-copy-share-code');
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Kopyalandı!';
+    setTimeout(() => {
+        btn.innerHTML = '<i class="fa-solid fa-copy"></i> Kopyala';
+    }, 2000);
+});
+
+// Close modals when clicking overlay
+['share-code-modal', 'import-pool-modal', 'import-result-modal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', (e) => {
+        if (e.target.id === id) {
+            document.getElementById(id).classList.remove('active');
+        }
+    });
+});
 
 // Initialize App
 initApp();

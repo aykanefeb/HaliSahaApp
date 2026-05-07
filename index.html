@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body class="dark-theme">
     <div class="app-container">
         <div id="dashboard-container" style="display: none; width: 100%; height: 100vh;">
@@ -20,14 +22,20 @@
                         <h2>Regista</h2>
                     </div>
                     <ul class="nav-links">
-                        <li class="active" data-target="dashboard-section"><i class="fa-solid fa-chart-line"></i> <span>Genel Bakış</span></li>
-                        <li data-target="players-section"><i class="fa-solid fa-users"></i> <span>Oyuncu Havuzu</span></li>
-                        <li data-target="teambuilder-section"><i class="fa-solid fa-people-group"></i> <span>Takım Kur</span></li>
+                        <li class="active" data-target="dashboard-section"><i class="fa-solid fa-chart-line"></i>
+                            <span>Genel Bakış</span>
+                        </li>
+                        <li data-target="players-section"><i class="fa-solid fa-users"></i> <span>Oyuncu Havuzu</span>
+                        </li>
+                        <li data-target="teambuilder-section"><i class="fa-solid fa-people-group"></i> <span>Takım
+                                Kur</span></li>
                         <li data-target="chat-section"><i class="fa-regular fa-comments"></i> <span>Sohbet</span></li>
                     </ul>
-                    
+
                     <div class="sidebar-groups">
-                        <h3 style="padding: 0 1.5rem; margin: 2rem 0 1rem; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Gruplarım</h3>
+                        <h3
+                            style="padding: 0 1.5rem; margin: 2rem 0 1rem; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+                            Gruplarım</h3>
                         <ul class="nav-links" id="sidebar-groups-list" style="margin-top:0;">
                             <!-- dynamically injected -->
                         </ul>
@@ -35,215 +43,314 @@
                 </nav>
 
                 <!-- Main Content -->
-                <main class="main-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-            <!-- Header -->
-            <header class="top-header">
-                <div class="header-title" style="display: flex; align-items: center; gap: 12px;">
-                    <h1 id="page-title">Genel Bakış</h1>
-                    <span id="current-group-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--primary); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; display:none;"></span>
-                </div>
-                <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
-                    <span id="group-code-display" style="font-size: 0.9rem; color: var(--text-muted); display: none; cursor: pointer;" title="Kopyalamak için tıklayın">Kod: <b></b></span>
-                    <button class="btn btn-outline" id="btn-pending-requests" style="display: none; position: relative;">
-                        <i class="fa-solid fa-user-clock"></i> İstekler
-                        <span id="pending-count-badge" class="notification-badge" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.75rem; display: flex; align-items: center; justify-content: center;">0</span>
-                    </button>
-                    <button class="btn btn-outline" id="btn-return-lobby"><i class="fa-solid fa-door-open"></i> Lobi</button>
-                    <button class="btn btn-outline" id="btn-leave-group" style="display: none; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);"><i class="fa-solid fa-sign-out-alt"></i> Ayrıl</button>
-                    <button class="btn btn-outline" id="btn-logout" title="Çıkış Yap"><i class="fa-solid fa-right-from-bracket"></i></button>
-                    <button class="btn btn-primary" id="btn-add-player-modal"><i class="fa-solid fa-plus"></i> Yeni Oyuncu</button>
-                </div>
-            </header>
-
-            <!-- Dashboard Section -->
-            <section id="dashboard-section" class="content-section active">
-                <div class="stats-grid">
-                    <div class="stat-card glass-panel">
-                        <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
-                        <div class="stat-details">
-                            <h3>Toplam Oyuncu</h3>
-                            <p class="stat-value" id="stat-total-players">0</p>
+                <main class="main-content">
+                    <!-- Header -->
+                    <header class="top-header">
+                        <div class="header-title" style="display: flex; align-items: center; gap: 12px;">
+                            <h1 id="page-title">Genel Bakış</h1>
+                            <span id="current-group-badge"
+                                style="background: rgba(16, 185, 129, 0.2); color: var(--primary); padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; display:none;"></span>
                         </div>
-                    </div>
-                    <div class="stat-card glass-panel">
-                        <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
-                        <div class="stat-details">
-                            <h3>Ortalama Yıldız</h3>
-                            <p class="stat-value" id="stat-avg-rating">0.0</p>
+                        <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
+                            <span id="group-code-display"
+                                style="font-size: 0.9rem; color: var(--text-muted); display: none; cursor: pointer;"
+                                title="Kopyalamak için tıklayın">Kod: <b></b></span>
+                            <button class="btn btn-outline" id="btn-pending-requests"
+                                style="display: none; position: relative;">
+                                <i class="fa-solid fa-user-clock"></i> İstekler
+                                <span id="pending-count-badge" class="notification-badge"
+                                    style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.75rem; display: flex; align-items: center; justify-content: center;">0</span>
+                            </button>
+                            <button class="btn btn-outline" id="btn-return-lobby"><i class="fa-solid fa-door-open"></i>
+                                Lobi</button>
+                            <button class="btn btn-outline" id="btn-leave-group"
+                                style="display: none; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);"><i
+                                    class="fa-solid fa-sign-out-alt"></i> Ayrıl</button>
+                            <button class="btn btn-outline" id="btn-logout" title="Çıkış Yap"><i
+                                    class="fa-solid fa-right-from-bracket"></i></button>
+                            <button class="btn btn-primary" id="btn-add-player-modal"><i class="fa-solid fa-plus"></i>
+                                Yeni Oyuncu</button>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="dashboard-recent">
-                    <h2 class="section-heading">Son Eklenen Oyuncular</h2>
-                    <div class="players-grid" id="recent-players-grid">
-                        <!-- Recent players injected here -->
-                    </div>
-                </div>
-            </section>
+                    </header>
 
-            <!-- Players Section -->
-            <section id="players-section" class="content-section">
-                <div class="filters-bar glass-panel">
-                    <div class="search-box">
-                        <i class="fa-solid fa-search"></i>
-                        <input type="text" id="search-player" placeholder="Oyuncu ara...">
-                    </div>
-                    <div class="filter-options">
-                        <select id="filter-position">
-                            <option value="all">Tüm Mevkiler</option>
-                            <option value="Kaleci">Kaleci</option>
-                            <option value="Defans">Defans</option>
-                            <option value="Orta Saha">Orta Saha</option>
-                            <option value="Kanat">Kanat</option>
-                            <option value="Forvet">Forvet</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="players-grid full-grid" id="all-players-grid">
-                    <!-- All players injected here -->
-                </div>
-            </section>
-
-            <!-- Team Builder Section -->
-            <section id="teambuilder-section" class="content-section">
-                <div class="teambuilder-controls glass-panel">
-                    <p>Havuzdaki oyunculardan dengeli iki takım oluşturmak için butona tıklayın.</p>
-                    <button class="btn btn-accent" id="btn-generate-teams">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Otomatik Dengeli Takım Kur
-                    </button>
-                    <div id="teambuilder-error" style="color: #ef4444; margin-top: 16px; font-weight: 500; display: none;"></div>
-                </div>
-
-                <div class="teams-container" style="display: none;" id="teams-result-container">
-                    <!-- Team A -->
-                    <div class="team-card glass-panel team-a">
-                        <div class="team-header">
-                            <h2>A Takımı</h2>
-                            <div class="team-stats" id="team-a-stats">Ort: 0.0</div>
+                    <!-- Dashboard Section -->
+                    <section id="dashboard-section" class="content-section active">
+                        <div class="stats-grid">
+                            <div class="stat-card glass-panel">
+                                <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                                <div class="stat-details">
+                                    <h3>Toplam Oyuncu</h3>
+                                    <p class="stat-value" id="stat-total-players">0</p>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-panel">
+                                <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+                                <div class="stat-details">
+                                    <h3>Ortalama Yıldız</h3>
+                                    <p class="stat-value" id="stat-avg-rating">0.0</p>
+                                </div>
+                            </div>
                         </div>
-                        <ul class="team-list" id="team-a-list">
-                            <!-- Players -->
-                        </ul>
-                    </div>
 
-                    <!-- Versus Badge -->
-                    <div class="versus-badge">VS</div>
-
-                    <!-- Team B -->
-                    <div class="team-card glass-panel team-b">
-                        <div class="team-header">
-                            <h2>B Takımı</h2>
-                            <div class="team-stats" id="team-b-stats">Ort: 0.0</div>
+                        <div class="dashboard-recent">
+                            <h2 class="section-heading">Son Eklenen Oyuncular</h2>
+                            <div class="players-grid" id="recent-players-grid">
+                                <!-- Recent players injected here -->
+                            </div>
                         </div>
-                        <ul class="team-list" id="team-b-list">
-                            <!-- Players -->
-                        </ul>
-                    </div>
+                    </section>
+
+                    <!-- Players Section -->
+                    <section id="players-section" class="content-section">
+                        <div class="filters-bar glass-panel">
+                            <div class="search-box">
+                                <i class="fa-solid fa-search"></i>
+                                <input type="text" id="search-player" placeholder="Oyuncu ara...">
+                            </div>
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <div class="filter-options" style="display: flex; gap: 12px; align-items: center;">
+                                    <select id="filter-position">
+                                        <option value="all">Tüm Mevkiler</option>
+                                        <option value="Kaleci">Kaleci</option>
+                                        <option value="Defans">Defans</option>
+                                        <option value="Orta Saha">Orta Saha</option>
+                                        <option value="Kanat">Kanat</option>
+                                        <option value="Forvet">Forvet</option>
+                                    </select>
+                                    <button class="btn btn-share-pool" id="btn-share-pool" title="Havuzu Paylaş">
+                                        <i class="fa-solid fa-share-nodes"></i> Paylaş
+                                    </button>
+                                    <button class="btn btn-import-pool" id="btn-import-pool" title="Havuz İçe Aktar">
+                                        <i class="fa-solid fa-download"></i> İçe Aktar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="share-error-msg" style="display: none; color: #ef4444; text-align: center; margin-bottom: 16px; font-weight: 500;"></div>
+
+                        <div class="players-grid full-grid" id="all-players-grid">
+                            <!-- All players injected here -->
+                        </div>
+                    </section>
+
+                    <!-- Team Builder Section -->
+                    <section id="teambuilder-section" class="content-section">
+                        <div class="teambuilder-controls glass-panel">
+                            <p>Havuzdaki oyunculardan dengeli iki takım oluşturmak için butona tıklayın.</p>
+                            <button class="btn btn-accent" id="btn-generate-teams">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Otomatik Dengeli Takım Kur
+                            </button>
+                            <div id="teambuilder-error"
+                                style="color: #ef4444; margin-top: 16px; font-weight: 500; display: none;"></div>
+                        </div>
+
+                        <div class="teams-container" style="display: none;" id="teams-result-container">
+                            <!-- Team A -->
+                            <div class="team-card glass-panel team-a">
+                                <div class="team-header">
+                                    <h2>A Takımı</h2>
+                                    <div class="team-stats" id="team-a-stats">Ort: 0.0</div>
+                                </div>
+                                <ul class="team-list" id="team-a-list">
+                                    <!-- Players -->
+                                </ul>
+                            </div>
+
+                            <!-- Versus Badge -->
+                            <div class="versus-badge">VS</div>
+
+                            <!-- Team B -->
+                            <div class="team-card glass-panel team-b">
+                                <div class="team-header">
+                                    <h2>B Takımı</h2>
+                                    <div class="team-stats" id="team-b-stats">Ort: 0.0</div>
+                                </div>
+                                <ul class="team-list" id="team-b-list">
+                                    <!-- Players -->
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="tactical-boards-container" style="display: none;" id="tactical-boards-container">
+                            <div class="pitch-wrapper">
+                                <h3 style="text-align:center; margin-bottom: 12px;">A Takımı Dizilişi</h3>
+                                <div class="pitch" id="pitch-team-a">
+                                    <div class="pitch-lines penalty-box"></div>
+                                    <div class="pitch-lines goal-area"></div>
+                                    <div class="pitch-lines center-circle"></div>
+                                    <!-- Players will be injected here -->
+                                </div>
+                            </div>
+                            <div class="pitch-wrapper">
+                                <h3 style="text-align:center; margin-bottom: 12px;">B Takımı Dizilişi</h3>
+                                <div class="pitch" id="pitch-team-b">
+                                    <div class="pitch-lines penalty-box"></div>
+                                    <div class="pitch-lines goal-area"></div>
+                                    <div class="pitch-lines center-circle"></div>
+                                    <!-- Players will be injected here -->
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Chat Section -->
+                    <section id="chat-section" class="content-section">
+                        <div class="chat-layout"
+                            style="display: flex; gap: 20px; height: calc(100vh - 120px); align-items: stretch;">
+                            <div class="chat-container glass-panel" style="flex: 1; margin: 0; height: 100%;">
+                                <div class="chat-messages" id="chat-messages">
+                                    <!-- Messages injected here -->
+                                </div>
+                                <div class="chat-input-area">
+                                    <input type="text" id="chat-input" placeholder="Mesajınızı yazın...">
+                                    <button class="btn btn-primary" id="btn-send-message"><i
+                                            class="fa-solid fa-paper-plane"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="chat-sidebar glass-panel"
+                                style="width: 250px; padding: 20px; height: 100%; overflow-y: auto;">
+                                <h3
+                                    style="font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 10px;">
+                                    <i class="fa-solid fa-users"></i> Grup Üyeleri
+                                </h3>
+                                <ul id="chat-member-list" style="list-style: none; padding: 0;">
+                                    <!-- Members injected via JS -->
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+
+                </main>
+            </div>
+        </div>
+
+        <!-- Add Player Modal -->
+        <div class="modal-overlay" id="add-player-modal">
+            <div class="modal-content glass-panel">
+                <div class="modal-header">
+                    <h2>Yeni Oyuncu Ekle</h2>
+                    <button class="close-modal" id="btn-close-modal"><i class="fa-solid fa-times"></i></button>
                 </div>
+                <div class="modal-body">
+                    <form id="add-player-form">
+                        <div class="form-group">
+                            <label for="player-name">Ad Soyad</label>
+                            <input type="text" id="player-name" required placeholder="Örn: Aykan">
+                        </div>
+                        <div class="form-group">
+                            <label for="player-position">Mevki</label>
+                            <select id="player-position" required>
+                                <option value="Kaleci">Kaleci</option>
+                                <option value="Defans">Defans</option>
+                                <option value="Orta Saha">Orta Saha</option>
+                                <option value="Kanat">Kanat</option>
+                                <option value="Forvet">Forvet</option>
+                            </select>
+                        </div>
 
-                <div class="tactical-boards-container" style="display: none;" id="tactical-boards-container">
-                    <div class="pitch-wrapper">
-                        <h3 style="text-align:center; margin-bottom: 12px;">A Takımı Dizilişi</h3>
-                        <div class="pitch" id="pitch-team-a">
-                            <div class="pitch-lines penalty-box"></div>
-                            <div class="pitch-lines goal-area"></div>
-                            <div class="pitch-lines center-circle"></div>
-                            <!-- Players will be injected here -->
+                        <div class="skills-section">
+                            <h3>Yetenek Puanları (1-100)</h3>
+                            <div class="skills-grid" id="dynamic-skills-container">
+                                <!-- Skill sliders will be injected here dynamically based on position -->
+                            </div>
                         </div>
-                    </div>
-                    <div class="pitch-wrapper">
-                        <h3 style="text-align:center; margin-bottom: 12px;">B Takımı Dizilişi</h3>
-                        <div class="pitch" id="pitch-team-b">
-                            <div class="pitch-lines penalty-box"></div>
-                            <div class="pitch-lines goal-area"></div>
-                            <div class="pitch-lines center-circle"></div>
-                            <!-- Players will be injected here -->
-                        </div>
-                    </div>
+
+                        <button type="submit" class="btn btn-primary full-width">Oyuncuyu Kaydet</button>
+                    </form>
                 </div>
-            </section>
+            </div>
+        </div>
 
-            <!-- Chat Section -->
-            <section id="chat-section" class="content-section">
-                <div class="chat-layout" style="display: flex; gap: 20px; height: calc(100vh - 120px); align-items: stretch;">
-                    <div class="chat-container glass-panel" style="flex: 1; margin: 0; height: 100%;">
-                        <div class="chat-messages" id="chat-messages">
-                            <!-- Messages injected here -->
-                        </div>
-                        <div class="chat-input-area">
-                            <input type="text" id="chat-input" placeholder="Mesajınızı yazın...">
-                            <button class="btn btn-primary" id="btn-send-message"><i class="fa-solid fa-paper-plane"></i></button>
-                        </div>
-                    </div>
-                    
-                    <div class="chat-sidebar glass-panel" style="width: 250px; padding: 20px; height: 100%; overflow-y: auto;">
-                        <h3 style="font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 10px;">
-                            <i class="fa-solid fa-users"></i> Grup Üyeleri
-                        </h3>
-                        <ul id="chat-member-list" style="list-style: none; padding: 0;">
-                            <!-- Members injected via JS -->
-                        </ul>
-                    </div>
+        <!-- Pending Requests Modal -->
+        <div class="modal-overlay" id="requests-modal">
+            <div class="modal-content glass-panel" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h2>Katılım İstekleri</h2>
+                    <button class="close-modal" id="btn-close-requests"><i class="fa-solid fa-times"></i></button>
                 </div>
-            </section>
+            </div>
+        </div>
+    </div> <!-- Close requests-modal -->
 
-        </main>
-    </div>
-</div>
-
-    <!-- Add Player Modal -->
-    <div class="modal-overlay" id="add-player-modal">
-        <div class="modal-content glass-panel">
+    <!-- Share Code Display Modal -->
+    <div class="modal-overlay" id="share-code-modal">
+        <div class="modal-content glass-panel" style="max-width: 420px; text-align: center;">
             <div class="modal-header">
-                <h2>Yeni Oyuncu Ekle</h2>
-                <button class="close-modal" id="btn-close-modal"><i class="fa-solid fa-times"></i></button>
+                <h2><i class="fa-solid fa-share-nodes" style="color: var(--accent);"></i> Havuz Paylaşıldı!</h2>
+                <button class="close-modal" id="btn-close-share-modal"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <form id="add-player-form">
-                    <div class="form-group">
-                        <label for="player-name">Ad Soyad</label>
-                        <input type="text" id="player-name" required placeholder="Örn: Aykan">
-                    </div>
-                    <div class="form-group">
-                        <label for="player-position">Mevki</label>
-                        <select id="player-position" required>
-                            <option value="Kaleci">Kaleci</option>
-                            <option value="Defans">Defans</option>
-                            <option value="Orta Saha">Orta Saha</option>
-                            <option value="Kanat">Kanat</option>
-                            <option value="Forvet">Forvet</option>
-                        </select>
-                    </div>
-                    
-                    <div class="skills-section">
-                        <h3>Yetenek Puanları (1-100)</h3>
-                        <div class="skills-grid" id="dynamic-skills-container">
-                            <!-- Skill sliders will be injected here dynamically based on position -->
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary full-width">Oyuncuyu Kaydet</button>
-                </form>
+                <p style="color: var(--text-muted); margin-bottom: 20px;">Aşağıdaki kodu karşı tarafa gönderin. Bu kodu girerek oyuncu havuzunuzu kendi grubuna aktarabilir.</p>
+                <div class="share-code-box">
+                    <span id="share-code-value" class="share-code-text">------</span>
+                </div>
+                <button class="btn btn-accent full-width" id="btn-copy-share-code" style="margin-top: 16px;">
+                    <i class="fa-solid fa-copy"></i> Kopyala
+                </button>
+                <div class="share-code-info">
+                    <p><i class="fa-solid fa-clock"></i> Bu kod <strong>1 saat</strong> geçerlidir</p>
+                    <p><i class="fa-solid fa-users"></i> <span id="share-player-count">0 oyuncu paylaşılacak</span></p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Pending Requests Modal -->
-    <div class="modal-overlay" id="requests-modal">
-        <div class="modal-content glass-panel" style="max-width: 400px;">
+    <!-- Import Pool Modal -->
+    <div class="modal-overlay" id="import-pool-modal">
+        <div class="modal-content glass-panel" style="max-width: 420px;">
             <div class="modal-header">
-                <h2>Katılım İstekleri</h2>
-                <button class="close-modal" id="btn-close-requests"><i class="fa-solid fa-times"></i></button>
+                <h2><i class="fa-solid fa-download" style="color: var(--primary);"></i> Havuz İçe Aktar</h2>
+                <button class="close-modal" id="btn-close-import-modal"><i class="fa-solid fa-times"></i></button>
             </div>
-            <div class="modal-body" id="requests-list">
-                <!-- Requests injected here -->
-            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); margin-bottom: 20px;">Başka bir grubun paylaştığı 6 haneli kodu girerek oyuncu havuzunu grubunuza aktarabilirsiniz.</p>
+                <div class="form-group">
+                    <label for="import-code-input">Paylaşım Kodu</label>
+                    <input type="text" id="import-code-input" placeholder="Örn: A3F9K2" maxlength="6" style="text-transform: uppercase; text-align: center; font-size: 1.3rem; letter-spacing: 4px; font-weight: 600;">
+                </div>
+                <div id="import-error-msg" style="display: none; color: #ef4444; text-align: center; margin-bottom: 12px; font-size: 0.9rem;"></div>
+                <button class="btn btn-primary full-width" id="btn-import-execute">
+                    <i class="fa-solid fa-download"></i> İçe Aktar
+                </button>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 12px; text-align: center;">
+                    <i class="fa-solid fa-info-circle"></i> Aynı isimdeki oyuncular otomatik olarak atlanır.
+                </p>
             </div>
         </div>
-    </div> <!-- Close modal-overlay -->
-</div> <!-- Close app-container (dashboard-container is closed inside JS logic or elsewhere) -->
+    </div>
+
+    <!-- Import Result Modal -->
+    <div class="modal-overlay" id="import-result-modal">
+        <div class="modal-content glass-panel" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-clipboard-check" style="color: var(--accent);"></i> İçe Aktarma Tamamlandı</h2>
+                <button class="close-modal" id="btn-close-result-modal"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); margin-bottom: 16px;">Kaynak: <strong id="result-source-name"></strong></p>
+                <div class="import-result-stats">
+                    <div class="result-stat result-stat-added">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span><strong id="result-added-count">0</strong> oyuncu eklendi</span>
+                    </div>
+                    <div class="result-stat result-stat-skipped">
+                        <i class="fa-solid fa-forward"></i>
+                        <span><strong id="result-skipped-count">0</strong> oyuncu atlandı</span>
+                    </div>
+                </div>
+                <div id="result-skipped-section" style="display: none; margin-top: 16px;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;"><i class="fa-solid fa-info-circle"></i> Atlanan oyuncular (zaten havuzda mevcut):</p>
+                    <ul id="result-skipped-list" class="skipped-players-list"></ul>
+                </div>
+                <button class="btn btn-primary full-width" id="btn-close-result-modal-bottom" onclick="document.getElementById('import-result-modal').classList.remove('active')">
+                    Tamam
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div> <!-- Close app-container -->
 
     <script type="module" src="app.js"></script>
 
@@ -256,7 +363,7 @@
                 <h1 style="margin-top: 10px;">Regista</h1>
                 <p style="color: var(--text-muted)">Hesabınıza giriş yapın</p>
             </div>
-            
+
             <div id="login-form-container">
                 <div class="lobby-card">
                     <h3>Giriş Yap</h3>
@@ -265,6 +372,21 @@
                     <button class="btn btn-primary full-width" id="btn-login">Giriş Yap</button>
                     <p style="text-align: center; font-size: 0.9rem; margin-top: 10px;">
                         Hesabınız yok mu? <a href="#" id="show-register" style="color: var(--primary);">Kayıt Ol</a>
+                    </p>
+                    <p style="text-align: center; font-size: 0.85rem; margin-top: 5px;">
+                        <a href="#" id="show-forgot-password" style="color: var(--text-muted);">Şifremi unuttum</a>
+                    </p>
+                </div>
+            </div>
+
+            <div id="forgot-password-form-container" style="display: none;">
+                <div class="lobby-card">
+                    <h3>Şifre Sıfırlama</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">E-posta adresinizi girin, size bir sıfırlama bağlantısı gönderelim.</p>
+                    <input type="email" id="reset-email" placeholder="E-posta">
+                    <button class="btn btn-primary full-width" id="btn-reset-password">Şifremi Sıfırla</button>
+                    <p style="text-align: center; font-size: 0.9rem; margin-top: 10px;">
+                        <a href="#" id="show-login-from-reset" style="color: var(--primary);">Giriş Yap'a Dön</a>
                     </p>
                 </div>
             </div>
@@ -289,13 +411,15 @@
     <!-- Lobby Overlay -->
     <div id="lobby-overlay" class="lobby-overlay">
         <div class="lobby-container glass-panel" style="position: relative;">
-            <button class="close-modal" id="btn-close-lobby" style="display: none; position: absolute; top: 15px; right: 15px;"><i class="fa-solid fa-times"></i></button>
+            <button class="close-modal" id="btn-close-lobby"
+                style="display: none; position: absolute; top: 15px; right: 15px;"><i
+                    class="fa-solid fa-times"></i></button>
             <div class="logo" style="margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center;">
                 <i class="fa-solid fa-futbol" style="font-size: 3rem; color: var(--primary);"></i>
                 <h1 style="margin-top: 10px;">Regista</h1>
                 <p id="user-welcome-msg" style="color: var(--text-muted)">Hoş geldin!</p>
             </div>
-            
+
             <div class="lobby-actions">
                 <div class="lobby-card">
                     <h3>Yeni Grup Kur</h3>
@@ -303,21 +427,24 @@
                     <input type="text" id="new-group-name" placeholder="Grup Adı (Örn: Cuma Akşamı Ekibi)">
                     <button class="btn btn-primary" id="btn-create-group">Grubu Oluştur</button>
                 </div>
-                
+
                 <div class="lobby-card">
                     <h3>Gruba Katıl</h3>
                     <p>Arkadaşınızdan gelen 6 haneli katılım kodunu buraya girin.</p>
-                    <input type="text" id="join-group-code" placeholder="Grup Kodu (#XXXXXX)" maxlength="6" style="text-transform: uppercase;">
+                    <input type="text" id="join-group-code" placeholder="Grup Kodu (#XXXXXX)" maxlength="6"
+                        style="text-transform: uppercase;">
                     <button class="btn btn-outline" id="btn-join-group">Gruba Katılma İsteği Gönder</button>
                 </div>
             </div>
 
-            <div id="lobby-pending-msg" style="display: none; margin-top: 20px; color: var(--primary); text-align: center;">
+            <div id="lobby-pending-msg"
+                style="display: none; margin-top: 20px; color: var(--primary); text-align: center;">
                 <i class="fa-solid fa-clock"></i> Katılma isteğiniz admin onayına gönderildi. Lütfen bekleyin...
             </div>
-            
-            <div id="lobby-error-msg" style="display: none; margin-top: 20px; color: #ef4444; text-align: center;"></div>
-            
+
+            <div id="lobby-error-msg" style="display: none; margin-top: 20px; color: #ef4444; text-align: center;">
+            </div>
+
             <div style="margin-top: 30px; text-align: center;">
                 <button class="btn btn-outline" id="btn-logout-lobby" style="font-size: 0.85rem; padding: 8px 16px;">
                     <i class="fa-solid fa-right-from-bracket"></i> Başka Hesapla Giriş Yap / Çıkış
@@ -326,4 +453,5 @@
         </div>
     </div>
 </body>
+
 </html>
