@@ -25,6 +25,7 @@ let userId = null;
 let userName = null;
 let activeGroupId = localStorage.getItem('matchmaker_activeGroupId');
 let currentGroupAdmins = [];
+let currentGroupTeamBuilders = [];
 
 let playersUnsubscribe = null;
 let messagesUnsubscribe = null;
@@ -375,7 +376,7 @@ document.getElementById('search-player').addEventListener('input', (e) => {
 
 
 // --- TEAM BUILDER ALGORITHM ---
-document.getElementById('btn-generate-teams').addEventListener('click', () => {
+document.getElementById('btn-generate-teams').addEventListener('click', async () => {
     const errorDiv = document.getElementById('teambuilder-error');
     if (errorDiv) errorDiv.style.display = 'none';
 
@@ -484,7 +485,15 @@ document.getElementById('btn-generate-teams').addEventListener('click', () => {
         });
     });
 
-    renderTeams(teamA, teamB, scoreA, scoreB);
+    // Save to Firestore so everyone sees the same teams
+    const teamsData = {
+        teamA: teamA.map(p => ({ id: p.id, name: p.name, position: p.position, rating: p.rating })),
+        teamB: teamB.map(p => ({ id: p.id, name: p.name, position: p.position, rating: p.rating })),
+        scoreA,
+        scoreB,
+        createdAt: new Date().toISOString()
+    };
+    await setDoc(doc(db, `groups/${activeGroupId}/meta`, 'generatedTeams'), teamsData);
 });
 
 function renderTeams(teamA, teamB, scoreA, scoreB) {
@@ -958,18 +967,35 @@ function subscribeToGroup(groupId) {
 
         currentMembers.forEach(data => {
             const isOnline = now - data.lastActive < 60000;
+            const isTargetAdmin = currentGroupAdmins.includes(data.userId);
+            const isTargetTeamBuilder = currentGroupTeamBuilders.includes(data.userId);
             const li = document.createElement('li');
             li.className = 'chat-member-item';
             
+            let roleBadge = '';
+            if (isTargetAdmin) {
+                roleBadge = '<span class="role-badge admin-badge">Admin</span>';
+            } else if (isTargetTeamBuilder) {
+                roleBadge = '<span class="role-badge tb-badge">Takım Kurucu</span>';
+            }
+            
             let content = `
-                <div style="display:flex; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
                     <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span> 
-                    <span>${data.userName} ${data.userId === userId ? '<small style="color:var(--text-muted)">(Sen)</small>' : ''}</span>
+                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.userName} ${data.userId === userId ? '<small style="color:var(--text-muted)">(Sen)</small>' : ''}</span>
+                    ${roleBadge}
                 </div>
             `;
             
             if (isAdmin && data.userId !== userId) {
-                content += `<button class="kick-btn" onclick="kickMember('${data.userId}')" title="Gruptan At"><i class="fa-solid fa-circle-minus"></i></button>`;
+                let actionBtns = '';
+                if (!isTargetAdmin) {
+                    const tbIcon = isTargetTeamBuilder ? 'fa-solid fa-star' : 'fa-regular fa-star';
+                    const tbTitle = isTargetTeamBuilder ? 'Takım Kurucu Yetkisini Kaldır' : 'Takım Kurucu Yap';
+                    actionBtns += `<button class="teambuilder-toggle-btn ${isTargetTeamBuilder ? 'active' : ''}" onclick="toggleTeamBuilder('${data.userId}', ${!isTargetTeamBuilder})" title="${tbTitle}"><i class="${tbIcon}"></i></button>`;
+                }
+                actionBtns += `<button class="kick-btn" onclick="kickMember('${data.userId}')" title="Gruptan At"><i class="fa-solid fa-circle-minus"></i></button>`;
+                content += `<div style="display:flex; gap:6px; flex-shrink:0;">${actionBtns}</div>`;
             }
             
             li.innerHTML = content;
@@ -994,6 +1020,15 @@ function subscribeToGroup(groupId) {
         btnLeaveGroup.style.display = 'flex';
 
         currentGroupAdmins = groupData.admins || [];
+        currentGroupTeamBuilders = groupData.teamBuilders || [];
+
+        // Show/hide team builder button based on role
+        const btnGenerateTeams = document.getElementById('btn-generate-teams');
+        const canBuildTeams = currentGroupAdmins.includes(userId) || currentGroupTeamBuilders.includes(userId);
+        if (btnGenerateTeams) {
+            btnGenerateTeams.style.display = canBuildTeams ? 'inline-flex' : 'none';
+        }
+
         if (currentGroupAdmins.includes(userId)) {
             btnPendingRequests.style.display = 'flex';
             const reqCount = (groupData.requests || []).length;
@@ -1003,6 +1038,16 @@ function subscribeToGroup(groupId) {
         } else {
             btnPendingRequests.style.display = 'none';
         }
+
+        // Re-render members immediately when roles change
+        renderMembers();
+    });
+
+    // Listen for generated teams
+    onSnapshot(doc(db, `groups/${groupId}/meta`, 'generatedTeams'), (d) => {
+        if (!d.exists()) return;
+        const data = d.data();
+        renderTeams(data.teamA, data.teamB, data.scoreA, data.scoreB);
     });
 
     playersUnsubscribe = onSnapshot(collection(db, `groups/${groupId}/players`), (snapshot) => {
@@ -1034,6 +1079,7 @@ btnCreateGroup.addEventListener('click', async () => {
         id: groupId,
         name: name,
         admins: [userId],
+        teamBuilders: [],
         members: [userId],
         requests: []
     });
@@ -1177,9 +1223,24 @@ window.kickMember = async function(targetUserId) {
         const groupRef = doc(db, "groups", activeGroupId);
         await updateDoc(groupRef, {
             members: arrayRemove(targetUserId),
-            admins: arrayRemove(targetUserId)
+            admins: arrayRemove(targetUserId),
+            teamBuilders: arrayRemove(targetUserId)
         });
         await deleteDoc(doc(db, `groups/${activeGroupId}/members`, targetUserId));
+    }
+};
+
+window.toggleTeamBuilder = async function(targetUserId, makeTeamBuilder) {
+    if (!activeGroupId) return;
+    const groupRef = doc(db, "groups", activeGroupId);
+    if (makeTeamBuilder) {
+        await updateDoc(groupRef, {
+            teamBuilders: arrayUnion(targetUserId)
+        });
+    } else {
+        await updateDoc(groupRef, {
+            teamBuilders: arrayRemove(targetUserId)
+        });
     }
 };
 
