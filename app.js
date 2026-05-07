@@ -625,8 +625,33 @@ function renderChat() {
     chatMessages.innerHTML = '<div class="message system">Sohbete hoş geldiniz! Takım organizasyonu için buradan mesajlaşabilirsiniz.</div>';
     messages.forEach(msg => {
         const div = document.createElement('div');
-        div.className = `message ${msg.sender === userName ? 'user' : 'other'}`;
-        div.innerHTML = `<strong>${msg.sender === userName ? 'Sen' : msg.sender}:</strong> ${msg.text}`;
+        const isAdmin = currentGroupAdmins.includes(userId);
+        const isMine = msg.userId === userId || (!msg.userId && msg.sender === userName);
+        const canDelete = isMine || isAdmin;
+        
+        div.className = `message ${isMine ? 'user' : 'other'}`;
+        
+        div.innerHTML = `<strong>${isMine ? 'Sen' : msg.sender}:</strong> ${msg.text}`;
+        
+        if (canDelete) {
+            // Sağ tık (Masaüstü)
+            div.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                deleteMessage(msg.id);
+            });
+
+            // Basılı tutma (Mobil)
+            let pressTimer;
+            div.addEventListener('touchstart', (e) => {
+                pressTimer = setTimeout(() => {
+                    deleteMessage(msg.id);
+                }, 600);
+            }, { passive: true });
+            
+            div.addEventListener('touchend', () => clearTimeout(pressTimer));
+            div.addEventListener('touchmove', () => clearTimeout(pressTimer));
+        }
+        
         chatMessages.appendChild(div);
     });
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -639,6 +664,7 @@ async function sendMessage() {
     const newId = Date.now().toString();
     const newMsg = {
         id: newId,
+        userId: userId,
         sender: userName,
         text: text,
         timestamp: new Date().toISOString()
@@ -647,6 +673,13 @@ async function sendMessage() {
     chatInput.value = ''; // Clear immediately for UX
     await setDoc(doc(db, `groups/${activeGroupId}/messages`, newId), newMsg);
 }
+
+window.deleteMessage = async function(msgId) {
+    if (!activeGroupId) return;
+    if (confirm("Bu mesajı silmek istediğinize emin misiniz?")) {
+        await deleteDoc(doc(db, `groups/${activeGroupId}/messages`, msgId));
+    }
+};
 
 btnSendMessage.addEventListener('click', sendMessage);
 chatInput.addEventListener('keypress', (e) => {
@@ -694,7 +727,7 @@ btnRegister.addEventListener('click', async () => {
         btnRegister.disabled = true;
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
-        // User will be updated via onAuthStateChanged
+        window.location.reload();
     } catch (error) {
         showAuthError(translateAuthError(error.code));
     } finally {
@@ -879,12 +912,25 @@ function subscribeToGroup(groupId) {
         if (!memberList) return;
         memberList.innerHTML = '';
         const now = Date.now();
+        const isAdmin = currentGroupAdmins.includes(userId);
+
         currentMembers.forEach(data => {
             const isOnline = now - data.lastActive < 60000;
             const li = document.createElement('li');
             li.className = 'chat-member-item';
-            li.innerHTML = `<span class="status-dot ${isOnline ? 'online' : 'offline'}"></span> 
-                            <span>${data.userName} ${data.userId === userId ? '<small style="color:var(--text-muted)">(Sen)</small>' : ''}</span>`;
+            
+            let content = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span> 
+                    <span>${data.userName} ${data.userId === userId ? '<small style="color:var(--text-muted)">(Sen)</small>' : ''}</span>
+                </div>
+            `;
+            
+            if (isAdmin && data.userId !== userId) {
+                content += `<button class="kick-btn" onclick="kickMember('${data.userId}')" title="Gruptan At"><i class="fa-solid fa-circle-minus"></i></button>`;
+            }
+            
+            li.innerHTML = content;
             memberList.appendChild(li);
         });
     };
@@ -949,6 +995,7 @@ btnCreateGroup.addEventListener('click', async () => {
         members: [userId],
         requests: []
     });
+    await setDoc(doc(db, `groups/${groupId}/members`, userId), { userName: userName, lastActive: 0 });
     btnCreateGroup.disabled = false;
     newGroupNameInput.value = '';
     switchToGroup(groupId);
@@ -1071,6 +1118,7 @@ window.approveRequest = async function (reqUserId, reqUserName) {
         members: arrayUnion(reqUserId),
         requests: arrayRemove({ userId: reqUserId, userName: reqUserName })
     });
+    await setDoc(doc(db, `groups/${activeGroupId}/members`, reqUserId), { userName: reqUserName, lastActive: 0 });
 };
 
 window.rejectRequest = async function (reqUserId, reqUserName) {
@@ -1079,6 +1127,18 @@ window.rejectRequest = async function (reqUserId, reqUserName) {
     await updateDoc(groupRef, {
         requests: arrayRemove({ userId: reqUserId, userName: reqUserName })
     });
+};
+
+window.kickMember = async function(targetUserId) {
+    if (!activeGroupId) return;
+    if (confirm("Bu kullanıcıyı gruptan atmak istediğinize emin misiniz?")) {
+        const groupRef = doc(db, "groups", activeGroupId);
+        await updateDoc(groupRef, {
+            members: arrayRemove(targetUserId),
+            admins: arrayRemove(targetUserId)
+        });
+        await deleteDoc(doc(db, `groups/${activeGroupId}/members`, targetUserId));
+    }
 };
 
 // Initialize App
