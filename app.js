@@ -431,68 +431,81 @@ document.getElementById('btn-generate-teams').addEventListener('click', async ()
         teamB.push(gk1);
     }
 
-    let scoreA = parseFloat(teamA[0].rating);
-    let scoreB = parseFloat(teamB[0].rating);
+    let scoreA = parseFloat(teamA[0].rating) || 0;
+    let scoreB = parseFloat(teamB[0].rating) || 0;
 
-    // Group other players by position and distribute them fairly
-    const positions = ['Defans', 'Orta Saha', 'Kanat', 'Forvet'];
+    // Get all outfielders and sort them to prioritize position balancing
+    // We sort by: 1. Position (to keep them grouped), 2. Rating (descending)
+    const sortedOutfielders = [...outfielders].sort((a, b) => {
+        const posOrder = ['Defans', 'Orta Saha', 'Kanat', 'Forvet'];
+        const posA = posOrder.indexOf(a.position);
+        const posB = posOrder.indexOf(b.position);
+        
+        if (posA !== posB) return posA - posB;
+        
+        const rA = (parseFloat(a.rating) || 0) + (Math.random() * 0.2 - 0.1);
+        const rB = (parseFloat(b.rating) || 0) + (Math.random() * 0.2 - 0.1);
+        return rB - rA;
+    });
 
-    positions.forEach(pos => {
-        let playersInPos = outfielders.filter(p => p.position === pos);
-        // Sort descending by rating (Add tiny random noise +/- 0.1 to swap players with same/close ratings)
-        playersInPos.sort((a, b) => {
-            const ratingA = parseFloat(a.rating) + (Math.random() * 0.2 - 0.1);
-            const ratingB = parseFloat(b.rating) + (Math.random() * 0.2 - 0.1);
-            return ratingB - ratingA;
-        });
+    let currentPos = null;
+    let countA = 0; // Position-specific count for Team A
+    let countB = 0; // Position-specific count for Team B
 
-        let countA = 0; // Tracks number of players of this position in Team A
-        let countB = 0; // Tracks number of players of this position in Team B
+    sortedOutfielders.forEach(player => {
+        // If we move to a new position group, reset position-specific counters
+        if (player.position !== currentPos) {
+            currentPos = player.position;
+            countA = 0;
+            countB = 0;
+        }
 
-        playersInPos.forEach(player => {
-            // First priority: Keep overall team sizes equal
-            if (teamA.length < teamB.length) {
+        const pRating = parseFloat(player.rating) || 0;
+
+        // Decision logic
+        // 1. First priority: Keep overall team sizes equal
+        if (teamA.length < teamB.length) {
+            teamA.push(player);
+            scoreA += pRating;
+            countA++;
+        } else if (teamB.length < teamA.length) {
+            teamB.push(player);
+            scoreB += pRating;
+            countB++;
+        } else {
+            // 2. Second priority: Balance the current position counts
+            if (countA < countB) {
                 teamA.push(player);
-                scoreA += parseFloat(player.rating);
+                scoreA += pRating;
                 countA++;
-            } else if (teamB.length < teamA.length) {
+            } else if (countB < countA) {
                 teamB.push(player);
-                scoreB += parseFloat(player.rating);
+                scoreB += pRating;
                 countB++;
             } else {
-                // Team sizes are currently equal, now balance by position count
-                if (countA < countB) {
-                    teamA.push(player);
-                    scoreA += parseFloat(player.rating);
-                    countA++;
-                } else if (countB < countA) {
-                    teamB.push(player);
-                    scoreB += parseFloat(player.rating);
-                    countB++;
-                } else {
-                    // Both total sizes and position counts are equal, balance by rating score
-                    if (Math.abs(scoreA - scoreB) < 0.3) {
-                        if (Math.random() > 0.5) {
-                            teamA.push(player);
-                            scoreA += parseFloat(player.rating);
-                            countA++;
-                        } else {
-                            teamB.push(player);
-                            scoreB += parseFloat(player.rating);
-                            countB++;
-                        }
-                    } else if (scoreA <= scoreB) {
+                // 3. Third priority: Balance the overall rating scores
+                if (Math.abs(scoreA - scoreB) < 0.3) {
+                    // Very close scores? Randomize for variety
+                    if (Math.random() > 0.5) {
                         teamA.push(player);
-                        scoreA += parseFloat(player.rating);
+                        scoreA += pRating;
                         countA++;
                     } else {
                         teamB.push(player);
-                        scoreB += parseFloat(player.rating);
+                        scoreB += pRating;
                         countB++;
                     }
+                } else if (scoreA <= scoreB) {
+                    teamA.push(player);
+                    scoreA += pRating;
+                    countA++;
+                } else {
+                    teamB.push(player);
+                    scoreB += pRating;
+                    countB++;
                 }
             }
-        });
+        }
     });
 
     // Save to Firestore so everyone sees the same teams
