@@ -353,9 +353,23 @@
         </div>
     </div>
 
+    <!-- Custom Confirm Modal -->
+    <div class="modal-overlay" id="custom-confirm-modal" style="z-index: 10000;">
+        <div class="modal-content glass-panel" style="max-width: 380px; text-align: center;">
+            <div class="modal-body" style="padding: 30px 24px;">
+                <i class="fa-solid fa-circle-question" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 16px;"></i>
+                <p id="confirm-message" style="font-size: 1.05rem; margin-bottom: 24px; line-height: 1.5;"></p>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-outline full-width" id="confirm-cancel-btn">İptal</button>
+                    <button class="btn btn-primary full-width" id="confirm-ok-btn">Evet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div> <!-- Close app-container -->
 
-    <script type="module" src="app.js"></script>
+    <script type="module" src="js/app.js"></script>
 
     <!-- Overlays at the end to prevent layout shifts -->
     <!-- Auth Overlay -->
