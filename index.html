@@ -67,8 +67,6 @@
                             <button class="btn btn-outline" id="btn-leave-group"
                                 style="display: none; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);"><i
                                     class="fa-solid fa-sign-out-alt"></i> Ayrıl</button>
-                            <button class="btn btn-outline" id="btn-edit-profile" title="Profili Düzenle"><i
-                                    class="fa-solid fa-user-pen"></i></button>
                             <button class="btn btn-outline" id="btn-logout" title="Çıkış Yap"><i
                                     class="fa-solid fa-right-from-bracket"></i></button>
                             <button class="btn btn-primary" id="btn-add-player-modal"><i class="fa-solid fa-plus"></i>
@@ -440,6 +438,7 @@
                 <i class="fa-solid fa-futbol" style="font-size: 3rem; color: var(--primary);"></i>
                 <h1 style="margin-top: 10px;">Regista</h1>
                 <p id="user-welcome-msg" style="color: var(--text-muted)">Hoş geldin!</p>
+                <button class="btn btn-outline" id="btn-edit-profile" style="margin-top: 10px; font-size: 0.8rem; padding: 6px 12px;"><i class="fa-solid fa-user-pen"></i> Profili Düzenle</button>
             </div>
 
             <div class="lobby-actions">
@@ -472,25 +471,28 @@
                     <i class="fa-solid fa-right-from-bracket"></i> Başka Hesapla Giriş Yap / Çıkış
                 </button>
             </div>
-        <!-- Edit Profile Modal -->
-        <div class="modal-overlay" id="edit-profile-modal">
-            <div class="modal-content glass-panel" style="max-width: 400px;">
-                <div class="modal-header">
-                    <h2>Profili Düzenle</h2>
-                    <button class="close-modal" id="btn-close-profile"><i class="fa-solid fa-times"></i></button>
-                </div>
-                <div class="modal-body">
-                    <form id="edit-profile-form">
-                        <div class="form-group">
-                            <label for="edit-profile-name">Yeni İsim</label>
-                            <input type="text" id="edit-profile-name" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary full-width" id="btn-save-profile">Kaydet</button>
-                    </form>
-                </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="edit-profile-modal">
+        <div class="modal-content glass-panel" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Profili Düzenle</h2>
+                <button class="close-modal" id="btn-close-profile"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-profile-form">
+                    <div class="form-group">
+                        <label for="edit-profile-name">Yeni İsim</label>
+                        <input type="text" id="edit-profile-name" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary full-width" id="btn-save-profile">Kaydet</button>
+                </form>
             </div>
         </div>
     </div>
+
     <script type="module" src="./js/app.js"></script>
 </body>
 </html>
