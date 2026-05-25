@@ -146,6 +146,76 @@ h1 {
     display: block;
 }
 
+/* Collapsible Sidebar Styles */
+.sidebar {
+    transition: width 0.3s ease, margin 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+}
+
+.sidebar.collapsed {
+    width: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.chat-sidebar {
+    transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+}
+
+.chat-sidebar.collapsed {
+    width: 0 !important;
+    padding: 0 !important;
+    opacity: 0;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .main-layout {
+        position: relative;
+    }
+    
+    .sidebar {
+        position: absolute;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        height: calc(100vh - 32px);
+        background: var(--bg-surface);
+    }
+
+    #btn-toggle-sidebar {
+        display: block !important;
+    }
+    
+    .sidebar.collapsed {
+        transform: translateX(-100%);
+        opacity: 0;
+        width: 250px; /* Keep width but hide it */
+        margin: 16px;
+        padding: 24px 0;
+    }
+    
+    #btn-toggle-chat-sidebar {
+        display: block !important;
+    }
+
+    .chat-sidebar {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        z-index: 100;
+        background: var(--bg-surface);
+    }
+    
+    .chat-sidebar.collapsed {
+        transform: translateX(100%);
+        width: 250px !important;
+        padding: 20px !important;
+    }
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }

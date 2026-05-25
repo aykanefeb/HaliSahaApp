@@ -147,3 +147,69 @@ function translateAuthError(code) {
         default: return 'Bir hata oluştu: ' + code;
     }
 }
+
+// --- PROFILE EDIT ---
+const btnEditProfile = document.getElementById('btn-edit-profile');
+const editProfileModal = document.getElementById('edit-profile-modal');
+const btnCloseProfile = document.getElementById('btn-close-profile');
+const editProfileForm = document.getElementById('edit-profile-form');
+const editProfileNameInput = document.getElementById('edit-profile-name');
+const btnSaveProfile = document.getElementById('btn-save-profile');
+
+if (btnEditProfile) {
+    btnEditProfile.addEventListener('click', () => {
+        if (auth.currentUser) {
+            editProfileNameInput.value = auth.currentUser.displayName || '';
+        }
+        editProfileModal.classList.add('active');
+    });
+}
+
+if (btnCloseProfile) {
+    btnCloseProfile.addEventListener('click', () => {
+        editProfileModal.classList.remove('active');
+    });
+}
+
+if (editProfileForm) {
+    editProfileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newName = editProfileNameInput.value.trim();
+        if (!newName || !auth.currentUser) return;
+
+        btnSaveProfile.disabled = true;
+        btnSaveProfile.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Kaydediliyor...';
+        
+        try {
+            await updateProfile(auth.currentUser, { displayName: newName });
+            
+            // Update state
+            import('./state.js').then(module => {
+                const state = module.default;
+                state.userName = newName;
+                document.getElementById('user-welcome-msg').textContent = `Hoş geldin, ${state.userName}!`;
+                
+                // If in a group, update my presence doc so everyone sees the new name
+                if (state.activeGroupId) {
+                    import('./firebase.js').then(fbModule => {
+                        const { db } = fbModule;
+                        import('https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js').then(fsModule => {
+                            fsModule.setDoc(fsModule.doc(db, `groups/${state.activeGroupId}/members`, state.userId), { 
+                                userName: state.userName, 
+                                lastActive: Date.now() 
+                            });
+                        });
+                    });
+                }
+            });
+
+            editProfileModal.classList.remove('active');
+        } catch (error) {
+            console.error("Profil güncellenirken hata:", error);
+            alert("Profil güncellenirken bir hata oluştu.");
+        } finally {
+            btnSaveProfile.disabled = false;
+            btnSaveProfile.textContent = 'Kaydet';
+        }
+    });
+}

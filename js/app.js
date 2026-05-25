@@ -38,3 +38,38 @@ navLinks.forEach(link => {
 
 // Initialize App
 initApp();
+
+// --- Sidebar Toggle Logic ---
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const sidebar = document.querySelector('.sidebar');
+const btnToggleChatSidebar = document.getElementById('btn-toggle-chat-sidebar');
+const chatSidebarPanel = document.getElementById('chat-sidebar-panel');
+
+if (btnToggleSidebar && sidebar) {
+    btnToggleSidebar.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+    });
+
+    // Close sidebar on mobile when a link is clicked
+    if (window.innerWidth <= 768) {
+        sidebar.classList.add('collapsed'); // start collapsed on mobile
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.add('collapsed');
+                }
+            });
+        });
+    }
+}
+
+if (btnToggleChatSidebar && chatSidebarPanel) {
+    // Start collapsed on mobile
+    if (window.innerWidth <= 768) {
+        chatSidebarPanel.classList.add('collapsed');
+    }
+    
+    btnToggleChatSidebar.addEventListener('click', () => {
+        chatSidebarPanel.classList.toggle('collapsed');
+    });
+}

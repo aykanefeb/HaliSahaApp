@@ -160,6 +160,21 @@ export function renderTeams(teamA, teamB, scoreA, scoreB) {
     generatePitch('pitch-team-b', teamB);
 }
 
+export function clearTeams() {
+    document.getElementById('teams-result-container').style.display = 'none';
+    document.getElementById('tactical-boards-container').style.display = 'none';
+    document.getElementById('team-a-stats').innerHTML = '';
+    document.getElementById('team-b-stats').innerHTML = '';
+    document.getElementById('team-a-list').innerHTML = '';
+    document.getElementById('team-b-list').innerHTML = '';
+    
+    const pitchA = document.getElementById('pitch-team-a');
+    if (pitchA) pitchA.querySelectorAll('.player-token').forEach(t => t.remove());
+    
+    const pitchB = document.getElementById('pitch-team-b');
+    if (pitchB) pitchB.querySelectorAll('.player-token').forEach(t => t.remove());
+}
+
 // --- TACTICAL BOARDS ---
 function generatePitch(pitchId, team) {
     const pitch = document.getElementById(pitchId);

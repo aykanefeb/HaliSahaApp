@@ -3,7 +3,7 @@ import { collection, setDoc, deleteDoc, doc, onSnapshot, getDoc, updateDoc, arra
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 import state, { customConfirm } from './state.js';
 import { renderPlayers, renderRecentPlayers, updateDashboardStats } from './players.js';
-import { renderTeams } from './teamBuilder.js';
+import { renderTeams, clearTeams } from './teamBuilder.js';
 import { renderChat } from './chat.js';
 
 // --- LOBBY & GROUP SYSTEM ---
@@ -50,18 +50,26 @@ export function subscribeToMyGroups() {
         if (state.activeGroupId && !myGroups.find(g => g.id === state.activeGroupId)) {
             state.activeGroupId = null;
             localStorage.removeItem('matchmaker_activeGroupId');
-            document.getElementById('lobby-overlay').classList.add('active');
-            document.getElementById('dashboard-container').style.display = 'none';
-            if (state.playersUnsubscribe) state.playersUnsubscribe();
-            if (state.messagesUnsubscribe) state.messagesUnsubscribe();
-            if (state.requestsUnsubscribe) state.requestsUnsubscribe();
-            if (state.membersUnsubscribe) state.membersUnsubscribe();
-            if (state.presenceInterval) clearInterval(state.presenceInterval);
-            if (state.presenceRenderInterval) clearInterval(state.presenceRenderInterval);
-            document.getElementById('current-group-badge').style.display = 'none';
-            document.getElementById('group-code-display').style.display = 'none';
-            document.getElementById('btn-pending-requests').style.display = 'none';
-            document.getElementById('btn-leave-group').style.display = 'none';
+            
+            if (myGroups.length > 0) {
+                // User left the current group but has other groups. Switch to the first one.
+                switchToGroup(myGroups[0].id);
+                return;
+            } else {
+                // User has no groups left. Show lobby.
+                document.getElementById('lobby-overlay').classList.add('active');
+                document.getElementById('dashboard-container').style.display = 'none';
+                if (state.playersUnsubscribe) state.playersUnsubscribe();
+                if (state.messagesUnsubscribe) state.messagesUnsubscribe();
+                if (state.requestsUnsubscribe) state.requestsUnsubscribe();
+                if (state.membersUnsubscribe) state.membersUnsubscribe();
+                if (state.presenceInterval) clearInterval(state.presenceInterval);
+                if (state.presenceRenderInterval) clearInterval(state.presenceRenderInterval);
+                document.getElementById('current-group-badge').style.display = 'none';
+                document.getElementById('group-code-display').style.display = 'none';
+                document.getElementById('btn-pending-requests').style.display = 'none';
+                document.getElementById('btn-leave-group').style.display = 'none';
+            }
         }
 
         myGroups.forEach(g => {
@@ -125,11 +133,29 @@ function subscribeToGroup(groupId) {
                 roleBadge = '<span class="role-badge tb-badge">Takım Kurucu</span>';
             }
 
+            let lastSeenStr = '';
+            if (!isOnline) {
+                const date = new Date(data.lastActive);
+                if (data.lastActive > 0) {
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const yyyy = date.getFullYear();
+                    const hh = String(date.getHours()).padStart(2, '0');
+                    const mins = String(date.getMinutes()).padStart(2, '0');
+                    lastSeenStr = `<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">Son görülme: ${dd}/${mm}/${yyyy} - ${hh}.${mins}</div>`;
+                }
+            }
+
             let content = `
                 <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
                     <span class="status-dot ${isOnline ? 'online' : 'offline'}"></span> 
-                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.userName} ${data.userId === state.userId ? '<small style="color:var(--text-muted)">(Sen)</small>' : ''}</span>
-                    ${roleBadge}
+                    <div style="display:flex; flex-direction:column; overflow:hidden;">
+                        <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:6px;">
+                            ${data.userName} ${data.userId === state.userId ? '<small style="color:var(--text-muted)">(Sen)</small>' : ''}
+                            ${roleBadge}
+                        </span>
+                        ${lastSeenStr}
+                    </div>
                 </div>
             `;
 
@@ -191,7 +217,10 @@ function subscribeToGroup(groupId) {
 
     // Listen for generated teams
     onSnapshot(doc(db, `groups/${groupId}/meta`, 'generatedTeams'), (d) => {
-        if (!d.exists()) return;
+        if (!d.exists()) {
+            clearTeams();
+            return;
+        }
         const data = d.data();
         renderTeams(data.teamA, data.teamB, data.scoreA, data.scoreB);
     });
